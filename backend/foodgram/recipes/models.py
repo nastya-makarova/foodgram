@@ -2,17 +2,65 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from foodgram.constants import MAX_LENGTH_NAME
+from foodgram.constants import (
+    MAX_LENGTH_NAME,
+    MAX_LENGTH_NAME_INGREDIENT,
+    MAX_LENGTH_MEASURE_UNIT,
+    MAX_LENGTH_NAME_TAG,
+    MAX_LENGTH_SLUG
+)
+
+
 
 User = get_user_model()
 
 
 class Ingredient(models.Model):
-    pass
+    """Модель для ингредиентов"""
+    name = models.CharField(
+        'Название',
+        max_length=MAX_LENGTH_NAME_INGREDIENT,
+        unique=True,
+        help_text='Название ингредиента, не более 128 символов.'
+    )
+    measurement_unit = models.CharField(
+        'Единицы измерения',
+        max_length=MAX_LENGTH_MEASURE_UNIT,
+        unique=True,
+        help_text='Единицы измерения, не более 64 символов.'
+
+    )
+
+    class Meta:
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
+        unique_together = ('name', 'measurement_unit')
+
+    def __str__(self):
+        return self.name
 
 
 class Tag(models.Model):
-    pass
+    """Модель для слагов."""
+    name = models.CharField(
+        'Имя тега',
+        max_length=MAX_LENGTH_NAME_TAG,
+        unique=True,
+        help_text='Имя тега, не более 32 символов.'
+    )
+    slug = models.SlugField(
+        'Слаг',
+        max_length=MAX_LENGTH_SLUG,
+        unique=True,
+        help_text='Слаг, не более 32 символов'
+    )
+
+    class Meta:
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
@@ -26,19 +74,19 @@ class Recipe(models.Model):
     name = models.CharField(
         'Имя',
         max_length=MAX_LENGTH_NAME,
-        help_text='Название рецепта, не более 256 символов'
+        help_text='Название рецепта, не более 256 символов.'
     )
     image = models.ImageField(
         'Фото рецепта',
         upload_to='recipes/images/',
         help_text='Картинка, закодированная в Base64'
     )
-    text = models.TextField('Описание рецепта', help_text='Описание рецепта')
+    text = models.TextField('Описание рецепта', help_text='Описание рецепта.')
     ingredients = models.ManyToManyField(
-        Ingredient, 
+        Ingredient,
         through='IngredientRecipe',
         verbose_name='Ингредиенты',
-        help_text='Список ингредиентов',
+        help_text='Список ингредиентов.',
         related_name='recipes'
     )
     tags = models.ManyToManyField(
@@ -55,8 +103,20 @@ class Recipe(models.Model):
             )
         ],
         verbose_name='Время приготовления',
-        help_text='Время приготовления (в минутах)'
+        help_text='Время приготовления (в минутах).'
     )
+    pub_date = models.DateTimeField(
+        'Дата публикации',
+        auto_now_add=True
+    )
+
+    class Meta:
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
+        ordering = ('-pub_date',)
+
+    def __str__(self):
+        return self.name
 
 
 class IngredientRecipe(models.Model):
@@ -74,3 +134,43 @@ class TagRecipe(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
+
+class Favorite(models.Model):
+    """Модель для избранных рецептов."""
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+        related_name='favorites'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепт',
+        related_name='favorites'
+    )
+
+    class Meta:
+        unique_together = ('author', 'recipe')
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'
+
+
+class Subsrtictions(models.Model):
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+        related_name='following'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользватель',
+        related_name='follower'
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        unique_together = ('author', 'user')

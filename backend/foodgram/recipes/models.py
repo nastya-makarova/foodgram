@@ -11,7 +11,6 @@ from foodgram.constants import (
 )
 
 
-
 User = get_user_model()
 
 

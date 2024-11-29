@@ -124,6 +124,13 @@ class IngredientRecipe(models.Model):
     """
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    amount = models.FloatField(
+        validators=[
+            MinValueValidator(
+                0.1, message='Укажите количество больше 0.'
+            )
+        ]
+    )
 
 
 class TagRecipe(models.Model):
@@ -136,10 +143,10 @@ class TagRecipe(models.Model):
 
 class Favorite(models.Model):
     """Модель для избранных рецептов."""
-    author = models.ForeignKey(
+    current_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор',
+        verbose_name='Текущий пользователь',
         related_name='favorites'
     )
     recipe = models.ForeignKey(
@@ -150,7 +157,7 @@ class Favorite(models.Model):
     )
 
     class Meta:
-        unique_together = ('author', 'recipe')
+        unique_together = ('current_user', 'recipe')
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
 
@@ -173,3 +180,23 @@ class Subsrtictions(models.Model):
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
         unique_together = ('author', 'user')
+
+
+class ShoppingList(models.Model):
+    """Модель для списка покупок."""
+    current_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Текущий пользователь',
+        related_name='shopping_lists'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепт',
+        related_name='shopping_lists'
+    )
+
+    class Meta:
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'

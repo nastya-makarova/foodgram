@@ -57,6 +57,17 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
         model = IngredientRecipe
         fields = ('ingredient', 'amount')
 
+
+class IngredientRecipeCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели IngredientRecipe при создании рецепта."""
+    ingredient = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredient.objects.all()
+    )
+
+    class Meta:
+        model = IngredientRecipe
+        fields = ('ingredient', 'amount')
+
     def validate_amount(self, value):
         """Метод проверяет, что введеное количество ингредиента больше 0."""
         if value <= 0:
@@ -67,12 +78,12 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели Recipe."""
+    """Сериализатор для отображения объекта модели Recipe."""
     tags = TagSerializer(many=True)
     author = UserSerializer
     ingredients = IngredientRecipeSerializer(many=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField(default=False)
+    is_in_shopping_cart = serializers.SerializerMethodField(default=False)
     image = serializers.SerializerMethodField('get_image_url')
 
     class Meta:
@@ -116,6 +127,17 @@ class RecipeSerializer(serializers.ModelSerializer):
             ).exists()
 
     def get_image_url(self, obj):
+        """Метод получает URL изображения."""
         if obj.image:
             return obj.image.url
         return None
+
+
+class RecipeCreateSerializer(serializers.ModelSerializer):
+    ingredients = IngredientRecipeCreateSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all())
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = ('ingredients', 'tags', 'image', 'name', 'cooking_time')

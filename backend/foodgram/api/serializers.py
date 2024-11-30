@@ -141,3 +141,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'image', 'name', 'cooking_time')
+
+
+class RecipeResponseSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField('get_image_url')
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+    def get_image_url(self, obj):
+        """Метод получает URL изображения."""
+        if obj.image:
+            return obj.image.url
+        return None

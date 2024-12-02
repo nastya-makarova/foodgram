@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.pagination import PageNumberPagination
 
 from .serializers import (
     IngredientSerializer,
@@ -28,3 +29,4 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    pagination_class = PageNumberPagination

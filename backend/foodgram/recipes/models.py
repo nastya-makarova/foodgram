@@ -120,8 +120,8 @@ class IngredientRecipe(models.Model):
     """Модель для связи между ингредиентами и рецептами.
     Связь между ингредиентами и рецептами многие-к-многим.
     """
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='ingredientrecipe')
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='ingredientrecipe')
     amount = models.FloatField(
         validators=[
             MinValueValidator(

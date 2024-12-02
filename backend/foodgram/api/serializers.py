@@ -51,7 +51,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для модели IngredientRecipe."""
-    ingredient = IngredientSerializer()
+    ingredient = IngredientSerializer(read_only=True)
 
     class Meta:
         model = IngredientRecipe
@@ -82,7 +82,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     author = UserSerializer
     ingredients = IngredientRecipeSerializer(many=True)
-    is_favorited = serializers.SerializerMethodField(default=False)
+    is_favorite = serializers.SerializerMethodField(default=False)
     is_in_shopping_cart = serializers.SerializerMethodField(default=False)
     image = serializers.SerializerMethodField('get_image_url')
 
@@ -93,7 +93,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             'tags',
             'author',
             'ingredients',
-            'is_favorited',
+            'is_favorite',
             'is_in_shopping_cart',
             'name',
             'image',

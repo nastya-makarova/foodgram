@@ -25,7 +25,6 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField(
         'Единицы измерения',
         max_length=MAX_LENGTH_MEASURE_UNIT,
-        unique=True,
         help_text='Единицы измерения, не более 64 символов.'
 
     )
@@ -33,7 +32,6 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
-        unique_together = ('name', 'measurement_unit')
 
     def __str__(self):
         return self.name
@@ -132,6 +130,10 @@ class IngredientRecipe(models.Model):
         ]
     )
 
+    class Meta:
+        verbose_name = 'Ингредиент и Рецепт'
+        verbose_name_plural = 'Ингредиенты и Рецепты'
+
 
 class TagRecipe(models.Model):
     """Модель для связи между тегами и рецептами.
@@ -139,6 +141,10 @@ class TagRecipe(models.Model):
     """
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'Тег и Рецепт'
+        verbose_name_plural = 'Теги и Рецепты'
 
 
 class Favorite(models.Model):

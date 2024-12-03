@@ -9,6 +9,7 @@ from recipes.models import (Favorite,
                             Recipe,
                             ShoppingList,
                             Tag,
+                            TagRecipe,
                             User)
 
 
@@ -135,6 +136,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         return None
 
     def to_representation(self, instance):
+        """Метод изменяет формат вывода данных для ингредиентов."""
         representation = super().to_representation(instance)
         ingredients_data = representation.pop('ingredients')
         ingredients = []
@@ -150,13 +152,58 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
-    ingredients = IngredientRecipeCreateSerializer(many=True)
-    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all())
+    ingredients = IngredientRecipeCreateSerializer(source='ingredient', many=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
+    )
     image = Base64ImageField()
 
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'image', 'name', 'cooking_time')
+
+    def validate_cooking_time(self, value):
+        """Метод проверяет, значение времени готовки.
+        Оно должно быть не менее 1 мин.
+        """
+        if value <= 0:
+            raise serializers.ValidationError(
+                'Значение времни приготовления должно быть не менее 1 мин.'
+            )
+        return value
+
+    def to_internal_value(self, data):
+        if 'ingredients' in data:
+            ingredients = []
+            for ingredient in data['ingredients']:
+                ingredients.append(
+                    {
+                        'id': ingredient['id'],
+                        'amount': ingredient['amount']
+                    }
+                )
+        data['ingredients'] = ingredients
+        return data
+
+    def create(self, validated_data):
+        author = self.context['request'].user
+        tags_data = validated_data.pop('tags', [])
+        ingredients_data = validated_data.pop('ingredients', [])
+        recipe = Recipe.objects.create(author=author, **validated_data)
+        for tag in tags_data:
+            tag = Tag.objects.get(id=tag)
+            TagRecipe.objects.create(recipe=recipe, tag=tag)
+        for ingredient in ingredients_data:
+            amount = ingredient['amount']
+            ingredient = Ingredient.objects.get(id=ingredient['id'])
+            IngredientRecipe.objects.create(recipe=recipe, ingredient=ingredient, amount=amount)
+        return recipe
+
+    def to_representation(self, recipe):
+        """Метод изменяет сериализатор для отображение объекта Recipe.
+        Используется при формировании ответа на POST или PATCH запрос."""
+        serializer = RecipeSerializer()
+        return serializer.data
 
 
 class RecipeResponseSerializer(serializers.ModelSerializer):

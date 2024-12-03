@@ -32,5 +32,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     pagination_class = PageNumberPagination
+    http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+
+    def get_serializer_class(self):
+        """Метод определяет, какой сериализатор использовать.
+        RecipeSerializer для операций 'list' и 'retrieve'.
+        RecipeCreateSerializer для других действий (например, 'create')."""
+        if self.action in ('list', 'retrieve'):
+            return RecipeSerializer
+        return RecipeCreateSerializer

@@ -81,7 +81,9 @@ class RecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для отображения объекта модели Recipe."""
     tags = TagSerializer(many=True)
     author = UserSerializer()
-    ingredients = IngredientRecipeSerializer(source='ingredientrecipe', many=True)
+    ingredients = IngredientRecipeSerializer(
+        source='ingredientrecipe', many=True
+    )
     is_favorite = serializers.SerializerMethodField(default=False)
     is_in_shopping_cart = serializers.SerializerMethodField(default=False)
     image = serializers.SerializerMethodField('get_image_url')

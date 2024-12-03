@@ -1,7 +1,9 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
+from .filters import RecipeFilter
 from .serializers import (
     IngredientSerializer,
     IngredientRecipeSerializer,
@@ -30,3 +32,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter

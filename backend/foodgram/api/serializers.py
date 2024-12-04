@@ -49,9 +49,9 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
 
-
+ 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели IngredientRecipe."""
+    """Сериализатор для модели IngredientRecipe при отображении рецепта."""
     ingredient = IngredientSerializer(read_only=True)
 
     class Meta:
@@ -110,7 +110,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         Метод проверяет, есть ли рецепт в избранном
         у текущего пользователя.
         """
-        current_user = self.context['request'].user
+        if obj.author:
+            current_user = obj.author
+        else:
+            current_user = self.context['request'].user
         if current_user.is_authenticated:
             return Favorite.objects.filter(
                 current_user=current_user,
@@ -122,7 +125,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         Метод проверяет, есть ли рецепт в списке покупок
         у текущего пользователя.
         """
-        current_user = self.context['request'].user
+        if obj.author:
+            current_user = obj.author
+        else:
+            current_user = self.context['request'].user
         if current_user.is_authenticated:
             return ShoppingList.objects.filter(
                 current_user=current_user,
@@ -152,7 +158,10 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
-    ingredients = IngredientRecipeCreateSerializer(source='ingredient', many=True)
+    """Сериализатор для создания или изменения объекта Recipe."""
+    ingredients = IngredientRecipeCreateSerializer(
+        source='ingredient', many=True
+    )
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
@@ -173,6 +182,11 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return value
 
     def to_internal_value(self, data):
+        """
+        Метод преобразует входные данные для ингредиентов при создании рецепта.
+        Преобразованные данные, где поле 'ingredients' будет списком словарей
+        с ключами 'id' и 'amount'.
+        """
         if 'ingredients' in data:
             ingredients = []
             for ingredient in data['ingredients']:
@@ -186,6 +200,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        """Переопределят метод для создания объекта модели Recipe.
+        и создает соответствующие записи в связанных таблицах
+        (для Tag и Ingredient).
+        """
         author = self.context['request'].user
         tags_data = validated_data.pop('tags', [])
         ingredients_data = validated_data.pop('ingredients', [])
@@ -196,13 +214,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         for ingredient in ingredients_data:
             amount = ingredient['amount']
             ingredient = Ingredient.objects.get(id=ingredient['id'])
-            IngredientRecipe.objects.create(recipe=recipe, ingredient=ingredient, amount=amount)
+            IngredientRecipe.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                amount=amount
+            )
         return recipe
 
     def to_representation(self, recipe):
         """Метод изменяет сериализатор для отображение объекта Recipe.
         Используется при формировании ответа на POST или PATCH запрос."""
-        serializer = RecipeSerializer()
+        serializer = RecipeSerializer(recipe)
         return serializer.data
 
 

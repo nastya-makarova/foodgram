@@ -5,6 +5,7 @@ from .models import (
     Ingredient,
     IngredientRecipe,
     Recipe,
+    ShortLink,
     TagRecipe,
     Tag
 )
@@ -46,3 +47,8 @@ class IngredientRecipeAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit')
     list_editable = ('name', 'measurement_unit')
+
+
+@admin.register(ShortLink)
+class ShortLinkAdmin(admin.ModelAdmin):
+    list_display = ('id', 'recipe', 'short_link')

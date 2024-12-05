@@ -2,12 +2,14 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from api.service import get_short_url
 from foodgram.constants import (
     MAX_LENGTH_NAME,
     MAX_LENGTH_NAME_INGREDIENT,
     MAX_LENGTH_MEASURE_UNIT,
     MAX_LENGTH_NAME_TAG,
-    MAX_LENGTH_SLUG
+    MAX_LENGTH_SLUG,
+    MAX_LENGTH_SHORT_LINK
 )
 
 
@@ -120,8 +122,16 @@ class IngredientRecipe(models.Model):
     """Модель для связи между ингредиентами и рецептами.
     Связь между ингредиентами и рецептами многие-к-многим.
     """
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='ingredientrecipe')
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='ingredientrecipe')
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='ingredientrecipe'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='ingredientrecipe'
+    )
     amount = models.FloatField(
         validators=[
             MinValueValidator(
@@ -206,3 +216,26 @@ class ShoppingList(models.Model):
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
+
+
+class ShortLink(models.Model):
+    """Модель для коротких ссылок на рецепт."""
+    recipe = models.OneToOneField(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='short_link',
+        verbose_name='Короткая ссылка'
+    )
+    short_link = models.CharField(max_length=MAX_LENGTH_SHORT_LINK,
+                                  unique=True,
+                                  blank=True,
+                                  null=True
+                                )
+
+    def save(self, *args, **kwargs):
+        if not self.short_link:
+            self.short_link = get_short_url()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.short_link} для рецепта {self.recipe}'

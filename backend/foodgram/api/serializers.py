@@ -7,6 +7,7 @@ from recipes.models import (Favorite,
                             Ingredient,
                             IngredientRecipe,
                             Recipe,
+                            ShortLinkRecipe,
                             ShoppingList,
                             Tag,
                             TagRecipe,
@@ -270,3 +271,10 @@ class RecipeResponseSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+
+
+class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShortLinkRecipe
+        fields = ('short_link',)

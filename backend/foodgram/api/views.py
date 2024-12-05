@@ -12,16 +12,17 @@ from .serializers import (
     IngredientRecipeCreateSerializer,
     RecipeSerializer, RecipeCreateSerializer,
     RecipeResponseSerializer,
+    ShortLinkRecipeSeriealizer,
     TagSerializer
 )
-from recipes.models import Ingredient, ShortLink, Recipe, Tag
+from recipes.models import Ingredient, ShortLinkRecipe, Recipe, Tag
 
 
 def redirect_to_recipe(request, short_link):
     try:
-        short_link = ShortLink.objects.get(short_link=short_link)
+        short_link = ShortLinkRecipe.objects.get(short_link=short_link)
         return redirect('recipe-detail', pk=short_link.recipe.id)
-    except ShortLink.DoesNotExist:
+    except ShortLinkRecipe.DoesNotExist:
         return redirect('/')
 
 
@@ -57,7 +58,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, url_path='get-link')
     def get_recipe_short_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = ShortLink.objects.get_or_create(recipe=recipe)
+        short_link, created = ShortLinkRecipe.objects.get_or_create(recipe=recipe)
+        print(short_link)
+        serializer = ShortLinkRecipeSeriealizer(short_link)
+        print(serializer.data)
+        short_link_url = f'https://foodgram.example.org/s/{serializer.data["short_link"]}'
+        print(short_link_url)
         return Response({
-            'short_link': short_link
+            'short_link': short_link_url
         })

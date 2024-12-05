@@ -218,7 +218,7 @@ class ShoppingList(models.Model):
         verbose_name_plural = 'Списки покупок'
 
 
-class ShortLink(models.Model):
+class ShortLinkRecipe(models.Model):
     """Модель для коротких ссылок на рецепт."""
     recipe = models.OneToOneField(
         Recipe,
@@ -239,3 +239,7 @@ class ShortLink(models.Model):
 
     def __str__(self):
         return f'{self.short_link} для рецепта {self.recipe}'
+
+    class Meta:
+        verbose_name = 'Короткая ссылка для рецепта'
+        verbose_name_plural = 'Короткие ссылки для рецепта'

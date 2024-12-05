@@ -5,7 +5,7 @@ from .models import (
     Ingredient,
     IngredientRecipe,
     Recipe,
-    ShortLink,
+    ShortLinkRecipe,
     TagRecipe,
     Tag
 )
@@ -26,7 +26,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def get_favorite_count(self, obj):
         """Метод считает количество добавлений рецепта в избранное."""
-        return Favorite.objects.filter(recipe=obj)
+        return Favorite.objects.filter(recipe=obj).count()
 
 
 
@@ -49,6 +49,6 @@ class IngredientAdmin(admin.ModelAdmin):
     list_editable = ('name', 'measurement_unit')
 
 
-@admin.register(ShortLink)
+@admin.register(ShortLinkRecipe)
 class ShortLinkAdmin(admin.ModelAdmin):
     list_display = ('id', 'recipe', 'short_link')

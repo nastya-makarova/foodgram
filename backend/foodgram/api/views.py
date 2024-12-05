@@ -62,7 +62,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         print(short_link)
         serializer = ShortLinkRecipeSeriealizer(short_link)
         print(serializer.data)
-        short_link_url = f'https://foodgram.example.org/s/{serializer.data["short_link"]}'
+        short_link_url = f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
         print(short_link_url)
         return Response({
             'short_link': short_link_url

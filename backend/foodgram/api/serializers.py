@@ -196,7 +196,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                         'amount': ingredient['amount']
                     }
                 )
-        data['ingredients'] = ingredients
+            data['ingredients'] = ingredients
         return data
 
     def create(self, validated_data):
@@ -220,6 +220,36 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 amount=amount
             )
         return recipe
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.image = validated_data.get('image', instance.image)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
+
+        if 'tags' not in validated_data:
+            instance.save()
+        else:
+            tags_data = validated_data.pop('tags')
+            for tag in tags_data:
+                tag = Tag.objects.get(id=tag)
+                TagRecipe.objects.create(recipe=instance, tag=tag)
+
+        if 'ingredients' not in validated_data:
+            instance.save()
+        else:
+            ingredients_data = validated_data.pop('ingredients')
+            for ingredient in ingredients_data:
+                amount = ingredient['amount']
+                ingredient = Ingredient.objects.get(id=ingredient['id'])
+                IngredientRecipe.objects.create(
+                    recipe=instance,
+                    ingredient=ingredient,
+                    amount=amount
+                )
+
+        instance.save()
+        return instance
 
     def to_representation(self, recipe):
         """Метод изменяет сериализатор для отображение объекта Recipe.

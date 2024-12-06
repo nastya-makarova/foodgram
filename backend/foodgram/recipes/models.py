@@ -178,26 +178,6 @@ class Favorite(models.Model):
         verbose_name_plural = 'Избранные'
 
 
-class Subsrtictions(models.Model):
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
-        related_name='following'
-    )
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользватель',
-        related_name='follower'
-    )
-
-    class Meta:
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        unique_together = ('author', 'user')
-
-
 class ShoppingList(models.Model):
     """Модель для списка покупок."""
     current_user = models.ForeignKey(

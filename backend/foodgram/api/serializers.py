@@ -12,6 +12,7 @@ from recipes.models import (Favorite,
                             Tag,
                             TagRecipe,
                             User)
+from users.models import Subscription
 
 
 class Base64ImageField(serializers.ImageField):
@@ -29,10 +30,41 @@ class Base64ImageField(serializers.ImageField):
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для модели User."""
+    avatar = serializers.SerializerMethodField(
+        'get_avatar_url',
+        required=False
+    )
+    is_subscribed = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name')
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'avatar'
+        )
+
+    def get_avatar_url(self, obj):
+        """Метод получает URL изображения."""
+        if obj.avatar:
+            return obj.avatar.url
+        return None
+
+    def get_is_subscribed(self, obj):
+        """
+        Метод проверяет, подписан ли текущий пользовтаель
+        на другого пользователя.
+        """
+        current_user = self.context['request'].user
+        if current_user.is_authenticated:
+            return Subscription.objects.filter(
+                current_user=current_user,
+                user=obj
+            ).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -50,7 +82,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
 
- 
+
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для модели IngredientRecipe при отображении рецепта."""
     ingredient = IngredientSerializer(read_only=True)

@@ -1,7 +1,8 @@
+from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import redirect
+from rest_framework import mixins, viewsets
 from rest_framework.response import Response
-from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 
@@ -13,9 +14,12 @@ from .serializers import (
     RecipeSerializer, RecipeCreateSerializer,
     RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
-    TagSerializer
+    TagSerializer,
+    UserSerializer
 )
 from recipes.models import Ingredient, ShortLinkRecipe, Recipe, Tag
+
+User = get_user_model()
 
 
 def redirect_to_recipe(request, short_link):
@@ -57,13 +61,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, url_path='get-link')
     def get_recipe_short_link(self, request, pk=None):
+        """Метод позволяет получить короткую ссылку для рецепта."""
         recipe = self.get_object()
-        short_link, created = ShortLinkRecipe.objects.get_or_create(recipe=recipe)
-        print(short_link)
+        short_link, created = ShortLinkRecipe.objects.get_or_create(
+            recipe=recipe
+        )
         serializer = ShortLinkRecipeSeriealizer(short_link)
-        print(serializer.data)
         short_link_url = f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
-        print(short_link_url)
         return Response({
             'short_link': short_link_url
         })
+
+
+class UserViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet
+):
+    """ViewSet для работы с моделью User."""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    pagination_class = PageNumberPagination

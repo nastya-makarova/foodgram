@@ -65,6 +65,7 @@ class UserSerializer(serializers.ModelSerializer):
                 current_user=current_user,
                 user=obj
             ).exists()
+        return False
 
 
 class UserShowSerializer(serializers.ModelSerializer):

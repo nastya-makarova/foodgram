@@ -1,7 +1,9 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import redirect
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -16,7 +18,8 @@ from .serializers import (
     ShortLinkRecipeSeriealizer,
     TagSerializer,
     UserSerializer,
-    UserCreateSerializer
+    UserCreateSerializer,
+    UserShowSerializer
 )
 from recipes.models import Ingredient, ShortLinkRecipe, Recipe, Tag
 
@@ -92,3 +95,14 @@ class UserViewSet(
         if self.action in ('list', 'retrieve'):
             return UserSerializer
         return UserCreateSerializer
+
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='me'
+    )
+    def get_me(self, request):
+        print('Hello!')
+        serializer = UserSerializer(request.user, context={'request': request})
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)

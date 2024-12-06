@@ -15,7 +15,8 @@ from .serializers import (
     RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
     TagSerializer,
-    UserSerializer
+    UserSerializer,
+    UserCreateSerializer
 )
 from recipes.models import Ingredient, ShortLinkRecipe, Recipe, Tag
 
@@ -83,3 +84,11 @@ class UserViewSet(
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = PageNumberPagination
+
+    def get_serializer_class(self):
+        """Метод определяет, какой сериализатор использовать.
+        UserSerializer для операций 'list' и 'retrieve'.
+        UserCreateSerializer для 'create')."""
+        if self.action in ('list', 'retrieve'):
+            return UserSerializer
+        return UserCreateSerializer

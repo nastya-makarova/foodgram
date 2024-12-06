@@ -29,7 +29,7 @@ class Base64ImageField(serializers.ImageField):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели User."""
+    """Сериализатор для отображения объекта модели User."""
     avatar = serializers.SerializerMethodField(
         'get_avatar_url',
         required=False
@@ -65,6 +65,38 @@ class UserSerializer(serializers.ModelSerializer):
                 current_user=current_user,
                 user=obj
             ).exists()
+
+
+class UserShowSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для отображения объекта модели 
+    User после его создания.
+    """
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+        )
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания объекта модели User."""
+
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'first_name', 'last_name', 'password')
+
+    def to_representation(self, user):
+        """Метод изменяет сериализатор для отображение объекта User.
+        Используется при формировании ответа на POST запрос."""
+        serializer = UserShowSerializer(user)
+        print(serializer.data)
+        return serializer.data
 
 
 class TagSerializer(serializers.ModelSerializer):

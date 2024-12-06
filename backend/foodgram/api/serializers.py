@@ -96,8 +96,31 @@ class UserCreateSerializer(serializers.ModelSerializer):
         """Метод изменяет сериализатор для отображение объекта User.
         Используется при формировании ответа на POST запрос."""
         serializer = UserShowSerializer(user)
-        print(serializer.data)
         return serializer.data
+
+
+class AvatarUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для добавления аватара текущего пользователя."""
+    avatar = Base64ImageField()
+
+    class Meta:
+        model = User
+        fields = ('avatar',)
+
+    def get_avatar_url(self, obj):
+        """Метод получает URL изображения."""
+        if obj.avatar:
+            return obj.avatar.url
+        return None
+
+    def to_representation(self, instance):
+        """
+        Метод изменяет формат вывода данных для модели пользователя,
+        преобразуя аватар в ссылку на изображение."""
+        representation = super().to_representation(instance)
+        avatar_url = instance.avatar.url
+        representation['avatar'] = avatar_url 
+        return representation
 
 
 class TagSerializer(serializers.ModelSerializer):

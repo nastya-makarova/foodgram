@@ -1,4 +1,5 @@
 import base64
+import re
 
 from django.core.files.base import ContentFile
 from rest_framework import serializers
@@ -91,6 +92,18 @@ class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'username', 'first_name', 'last_name', 'password')
+
+    def validate_username(self, value):
+        username_pattern = r"^[\w.@+-]+\Z"
+        if value == "me":
+            raise serializers.ValidationError(
+                "Недопустимое имя пользователя",
+            )
+        if not re.match(username_pattern, value):
+            raise serializers.ValidationError(
+                "Недопустимые символы в имени пользователя",
+            )
+        return value
 
     def to_representation(self, user):
         """Метод изменяет сериализатор для отображение объекта User.

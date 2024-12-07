@@ -12,7 +12,8 @@ class UserAdmin(UserAdmin):
         'email',
         'first_name',
         'last_name',
-        'avatar'
+        'avatar',
+        'password'
     )
 
     list_editable = (

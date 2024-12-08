@@ -3,6 +3,8 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404, redirect
+from djoser.serializers import SetPasswordSerializer
+from djoser.views import UserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -78,12 +80,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         })
 
 
-class UserViewSet(
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.CreateModelMixin,
-    viewsets.GenericViewSet
-):
+class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -93,19 +90,12 @@ class UserViewSet(
         """Метод определяет, какой сериализатор использовать.
         UserSerializer для операций 'list' и 'retrieve'.
         UserCreateSerializer для 'create')."""
+        if self.action == 'set_password':
+            return SetPasswordSerializer
+
         if self.action in ('list', 'retrieve'):
             return UserSerializer
         return UserCreateSerializer
-
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='me'
-    )
-    def get_me(self, request):
-        """Метод для получения данных о текущем пользователе."""
-        serializer = UserSerializer(request.user, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['put', 'delete'],
@@ -136,5 +126,3 @@ class UserViewSet(
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-

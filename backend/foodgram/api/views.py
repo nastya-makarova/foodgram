@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404, redirect
 from djoser.serializers import SetPasswordSerializer
@@ -9,6 +10,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.views import APIView
 
 from .filters import RecipeFilter
 from .serializers import (
@@ -24,7 +26,7 @@ from .serializers import (
     UserCreateSerializer,
     UserShowSerializer
 )
-from recipes.models import Ingredient, ShortLinkRecipe, Recipe, Tag
+from recipes.models import Ingredient, IngredientRecipe, ShortLinkRecipe, Recipe, Tag, ShoppingList
 
 User = get_user_model()
 
@@ -126,3 +128,32 @@ class FoodgramUserViewSet(UserViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class APIDownloadShoppingList(APIView):
+    """View-класс для загрузки списка покупок в формате TXT."""
+    def create_txt_file(self, items):
+        """Создание TXT файла."""
+        response = HttpResponse(content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
+        for item in items:
+            list_item = f"{item['name']} - {item['amount']} {item['unit']}"
+            response.write(f"{list_item}\n")
+        return response
+
+    def get(self, request):
+        current_user = request.user
+        recipes_for_shopping = ShoppingList.objects.filter(current_user=current_user)
+        items = []
+        for recipe in recipes_for_shopping:
+            ingredients = IngredientRecipe.objects.filter(recipe=recipe)
+            for ingredient in ingredients:
+                ingredient = ingredientrecipe.ingredient
+                amount = ingredient.amount
+                items.append({
+                    'name': ingredient.name,
+                    'amount': amount,
+                    'measurement_unit': ingredient.measurement_unit
+                })
+
+        return self.create_txt_file(items)

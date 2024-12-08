@@ -134,7 +134,7 @@ class AvatarUpdateSerializer(serializers.ModelSerializer):
         avatar_url = instance.avatar.url
         representation['avatar'] = avatar_url 
         return representation
-    
+
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Tag."""

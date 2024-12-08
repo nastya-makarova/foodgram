@@ -1,4 +1,5 @@
 import base64
+import re
 
 from django.core.files.base import ContentFile
 from rest_framework import serializers
@@ -12,6 +13,7 @@ from recipes.models import (Favorite,
                             Tag,
                             TagRecipe,
                             User)
+from users.models import Subscription
 
 
 class Base64ImageField(serializers.ImageField):
@@ -28,12 +30,111 @@ class Base64ImageField(serializers.ImageField):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели User."""
+    """Сериализатор для отображения объекта модели User."""
+    avatar = serializers.SerializerMethodField(
+        'get_avatar_url',
+        required=False
+    )
+    is_subscribed = serializers.SerializerMethodField(default=False)
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name')
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'avatar'
+        )
 
+    def get_avatar_url(self, obj):
+        """Метод получает URL изображения."""
+        if obj.avatar:
+            return obj.avatar.url
+        return None
+
+    def get_is_subscribed(self, obj):
+        """
+        Метод проверяет, подписан ли текущий пользовтаель
+        на другого пользователя.
+        """
+        current_user = self.context['request'].user
+        if current_user.is_authenticated:
+            return Subscription.objects.filter(
+                current_user=current_user,
+                user=obj
+            ).exists()
+        return False
+
+
+class UserShowSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для отображения объекта модели 
+    User после его создания.
+    """
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+        )
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания объекта модели User."""
+
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'first_name', 'last_name', 'password')
+
+    def validate_username(self, value):
+        username_pattern = r"^[\w.@+-]+\Z"
+        if value == "me":
+            raise serializers.ValidationError(
+                "Недопустимое имя пользователя",
+            )
+        if not re.match(username_pattern, value):
+            raise serializers.ValidationError(
+                "Недопустимые символы в имени пользователя",
+            )
+        return value
+
+    def to_representation(self, user):
+        """Метод изменяет сериализатор для отображение объекта User.
+        Используется при формировании ответа на POST запрос."""
+        serializer = UserShowSerializer(user)
+        return serializer.data
+
+
+class AvatarUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для добавления аватара текущего пользователя."""
+    avatar = Base64ImageField()
+
+    class Meta:
+        model = User
+        fields = ('avatar',)
+
+    def get_avatar_url(self, obj):
+        """Метод получает URL изображения."""
+        if obj.avatar:
+            return obj.avatar.url
+        return None
+
+    def to_representation(self, instance):
+        """
+        Метод изменяет формат вывода данных для модели пользователя,
+        преобразуя аватар в ссылку на изображение."""
+        representation = super().to_representation(instance)
+        avatar_url = instance.avatar.url
+        representation['avatar'] = avatar_url 
+        return representation
+    
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Tag."""
@@ -50,7 +151,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
 
- 
+
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для модели IngredientRecipe при отображении рецепта."""
     ingredient = IngredientSerializer(read_only=True)

@@ -1,21 +1,32 @@
+from http import HTTPStatus
+
+from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
+from djoser.serializers import SetPasswordSerializer
+from djoser.views import UserViewSet
+from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
-from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 
 from .filters import RecipeFilter
 from .serializers import (
+    AvatarUpdateSerializer,
     IngredientSerializer,
     IngredientRecipeSerializer,
     IngredientRecipeCreateSerializer,
     RecipeSerializer, RecipeCreateSerializer,
     RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
-    TagSerializer
+    TagSerializer,
+    UserSerializer,
+    UserCreateSerializer,
+    UserShowSerializer
 )
 from recipes.models import Ingredient, ShortLinkRecipe, Recipe, Tag
+
+User = get_user_model()
 
 
 def redirect_to_recipe(request, short_link):
@@ -57,13 +68,61 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, url_path='get-link')
     def get_recipe_short_link(self, request, pk=None):
+        """Метод позволяет получить короткую ссылку для рецепта."""
         recipe = self.get_object()
-        short_link, created = ShortLinkRecipe.objects.get_or_create(recipe=recipe)
-        print(short_link)
+        short_link, created = ShortLinkRecipe.objects.get_or_create(
+            recipe=recipe
+        )
         serializer = ShortLinkRecipeSeriealizer(short_link)
-        print(serializer.data)
         short_link_url = f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
-        print(short_link_url)
         return Response({
             'short_link': short_link_url
         })
+
+
+class FoodgramUserViewSet(UserViewSet):
+    """ViewSet для работы с моделью User."""
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    pagination_class = PageNumberPagination
+
+    def get_serializer_class(self):
+        """Метод определяет, какой сериализатор использовать.
+        UserSerializer для операций 'list' и 'retrieve'.
+        UserCreateSerializer для 'create')."""
+        if self.action == 'set_password':
+            return SetPasswordSerializer
+
+        if self.action in ('list', 'retrieve'):
+            return UserSerializer
+        return UserCreateSerializer
+
+    @action(
+        methods=['put', 'delete'],
+        url_path='me/avatar',
+        detail=False
+    )
+    def update_avatar(self, request):
+        """Метод для изменения аватара текущего пользователя."""
+
+        current_user = request.user
+        if request.method == 'DELETE':
+            if current_user.avatar:
+                current_user.avatar.delete()
+                current_user.save()
+                return Response(
+                    {'detail': 'Аватар успешно удален.'},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+            else:
+                return Response(
+                    {'detail': 'Аватар не найден.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        serializer = AvatarUpdateSerializer(current_user, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

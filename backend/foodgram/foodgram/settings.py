@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = 'users.FoodgramUser'
 
 # Application definition
 
@@ -38,7 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'django_filters',
+    'djoser',
+    'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
     'api.apps.ApiConfig',
 ]
@@ -105,8 +109,22 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     "PAGE_SIZE": 5,
+
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
 }
 
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+}
+AUTHENTICATION_BACKENDS = [
+    "djoser.auth_backends.LoginFieldBackend",
+]
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 

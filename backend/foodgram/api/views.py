@@ -145,25 +145,38 @@ class APIDownloadShoppingList(APIView):
         response = HttpResponse(content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
         for item in items:
-            list_item = f"{item['name']} - {item['amount']} {item['unit']}"
+            list_item = f"{item['name']} - {item['amount']} {item['measurement_unit']}"
             response.write(f"{list_item}\n")
         return response
 
     def get(self, request):
-        current_user = request.user
-        recipes_for_shopping = ShoppingList.objects.filter(current_user=current_user)
+        recipes_for_shopping = ShoppingList.objects.filter(
+            current_user=request.user
+        )
         items = []
         for recipe in recipes_for_shopping:
-            ingredients = IngredientRecipe.objects.filter(recipe=recipe)
+            ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
             for ingredient in ingredients:
-                ingredient = ingredientrecipe.ingredient
+                ing_obj = Ingredient.objects.filter(
+                    id=ingredient.ingredient.id
+                ).first()
                 amount = ingredient.amount
-                items.append({
-                    'name': ingredient.name,
-                    'amount': amount,
-                    'measurement_unit': ingredient.measurement_unit
-                })
-
+                if len(items) == 0:
+                    items.append({
+                        'name': ing_obj.name,
+                        'amount': amount,
+                        'measurement_unit': ing_obj.measurement_unit
+                    })
+                for i in range(len(items)):
+                    if ing_obj.name in items[i].values():
+                        items[i]['amount'] += amount
+                        break
+                    else:
+                        items.append({
+                            'name': ing_obj.name,
+                            'amount': amount,
+                            'measurement_unit': ing_obj.measurement_unit
+                        })
         return self.create_txt_file(items)
 
 

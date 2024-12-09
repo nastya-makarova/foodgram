@@ -177,3 +177,23 @@ class APIShoppingList(APIView):
         )
         serializer = ShoppingListSerializer(shopping_list)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        current_user = request.user
+        recipe = get_object_or_404(Recipe, id=pk)
+        shopping_list = get_object_or_404(
+            ShoppingList,
+            current_user=current_user,
+            recipe=recipe
+        )
+        if shopping_list:
+            shopping_list.delete()
+            return Response(
+                {'detail': 'Рецепт успешно удален из списка покупок.'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        return Response(
+            {'detail': 'Ошибка удаления из списка покупок.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )

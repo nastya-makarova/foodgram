@@ -391,3 +391,15 @@ class ShoppingListSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         return representation['recipe']
+
+
+class FavoritesSerializer(serializers.ModelSerializer):
+    recipe = RecipeResponseSerializer()
+
+    class Meta:
+        model = Favorite
+        fields = ('recipe',)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return representation['recipe']

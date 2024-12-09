@@ -58,3 +58,7 @@ class ShortLinkAdmin(admin.ModelAdmin):
 @admin.register(ShoppingList)
 class ShoppingListAdmin(admin.ModelAdmin):
     list_display = ('id', 'recipe', 'current_user')
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('id', 'recipe', 'current_user')

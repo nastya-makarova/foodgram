@@ -134,7 +134,7 @@ class AvatarUpdateSerializer(serializers.ModelSerializer):
         avatar_url = instance.avatar.url
         representation['avatar'] = avatar_url 
         return representation
-    
+
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Tag."""
@@ -379,3 +379,15 @@ class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
     class Meta:
         model = ShortLinkRecipe
         fields = ('short_link',)
+
+
+class ShoppingListSerializer(serializers.ModelSerializer):
+    recipe = RecipeResponseSerializer()
+
+    class Meta:
+        model = ShoppingList
+        fields = ('recipe',)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return representation['recipe']

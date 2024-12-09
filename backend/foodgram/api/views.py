@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from .filters import RecipeFilter
 from .serializers import (
     AvatarUpdateSerializer,
+    FavoritesSerializer,
     IngredientSerializer,
     IngredientRecipeSerializer,
     IngredientRecipeCreateSerializer,
@@ -27,7 +28,9 @@ from .serializers import (
     UserCreateSerializer,
     UserShowSerializer,
 )
+
 from recipes.models import (
+    Favorite,
     Ingredient,
     IngredientRecipe,
     ShortLinkRecipe,
@@ -145,11 +148,17 @@ class APIDownloadShoppingList(APIView):
         response = HttpResponse(content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
         for item in items:
-            list_item = f"{item['name']} - {item['amount']} {item['measurement_unit']}"
+            list_item = (
+                f"{item['name']} - {item['amount']} {item['measurement_unit']}"
+            )
             response.write(f"{list_item}\n")
         return response
 
     def get(self, request):
+        """
+        Метод получает список покупок для текущего пользователя
+        и создает текстовый файл.
+        """
         recipes_for_shopping = ShoppingList.objects.filter(
             current_user=request.user
         )
@@ -181,7 +190,12 @@ class APIDownloadShoppingList(APIView):
 
 
 class APIShoppingList(APIView):
+    """
+    View-класс для добавления и удаления рецептов
+    из списка покупок пользователя.
+    """
     def post(self, request, pk):
+        """Добавление рецепта в список покупок пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
         current_user = request.user
         shopping_list = ShoppingList.objects.create(
@@ -192,6 +206,7 @@ class APIShoppingList(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, pk):
+        """Удаление рецепта в список покупок пользователя."""
         current_user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
         shopping_list = get_object_or_404(
@@ -210,3 +225,39 @@ class APIShoppingList(APIView):
             {'detail': 'Ошибка удаления из списка покупок.'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class APIFavorite(APIView):
+    """
+    View-класс для добавления и удаления рецептов
+    из избранного пользователя.
+    """
+    def post(self, request, pk):
+        """Добавление рецепта в избранное пользователя."""
+        recipe = get_object_or_404(Recipe, id=pk)
+        favorite_recipe = Favorite.objects.create(
+            current_user=request.user,
+            recipe=recipe
+        )
+        serializer = FavoritesSerializer(favorite_recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        """Удаление рецепта в избранное пользователя."""
+        recipe = get_object_or_404(Recipe, id=pk)
+        favorite_recipe = get_object_or_404(
+            Favorite,
+            current_user=request.user,
+            recipe=recipe
+        )
+        if favorite_recipe:
+            favorite_recipe.delete()
+            return Response(
+                {'detail': 'Рецепт успешно удален из избранного.'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        else:
+            return Response(
+                {'detail': 'Ошибка удаления из избранного.'},
+                status=status.HTTP_204_NO_CONTENT
+            )

@@ -1,7 +1,14 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import IngredientViewSet, RecipeViewSet, TagViewSet, FoodgramUserViewSet, APIDownloadShoppingList
+from .views import (
+    IngredientViewSet,
+    RecipeViewSet,
+    TagViewSet,
+    FoodgramUserViewSet,
+    APIDownloadShoppingList,
+    APIShoppingList,
+)
 
 users_v1 = DefaultRouter()
 
@@ -15,6 +22,7 @@ router_v1.register('ingredients', IngredientViewSet)
 
 urlpatterns = [
     path('recipes/download_shopping_cart/', APIDownloadShoppingList.as_view()),
+    path('recipes/<int:pk>/shopping_cart/', APIShoppingList.as_view()),
     path('', include(router_v1.urls)),
     path('', include(users_v1.urls)),
     path('auth/', include('djoser.urls.authtoken')),

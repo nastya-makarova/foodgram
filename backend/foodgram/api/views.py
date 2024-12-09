@@ -21,12 +21,20 @@ from .serializers import (
     RecipeSerializer, RecipeCreateSerializer,
     RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
+    ShoppingListSerializer,
     TagSerializer,
     UserSerializer,
     UserCreateSerializer,
-    UserShowSerializer
+    UserShowSerializer,
 )
-from recipes.models import Ingredient, IngredientRecipe, ShortLinkRecipe, Recipe, Tag, ShoppingList
+from recipes.models import (
+    Ingredient,
+    IngredientRecipe,
+    ShortLinkRecipe,
+    Recipe,
+    Tag,
+    ShoppingList
+)
 
 User = get_user_model()
 
@@ -157,3 +165,15 @@ class APIDownloadShoppingList(APIView):
                 })
 
         return self.create_txt_file(items)
+
+
+class APIShoppingList(APIView):
+    def post(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
+        current_user = request.user
+        shopping_list = ShoppingList.objects.create(
+            current_user=current_user,
+            recipe=recipe
+        )
+        serializer = ShoppingListSerializer(shopping_list)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

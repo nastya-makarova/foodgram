@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404, redirect
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
-from rest_framework import mixins, status, viewsets
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -60,6 +60,13 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Ingredient."""
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('^name',)
+
+    def get_queryset(self):
+        keyword = self.request.query_params.get('name', '')
+        queryset = Ingredient.objects.filter(name__icontains=keyword)
+        return queryset
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

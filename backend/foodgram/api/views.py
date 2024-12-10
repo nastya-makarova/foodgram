@@ -273,11 +273,48 @@ class APIFavorite(APIView):
             )
 
 
-class APISubscriptions(ListAPIView):
+class APIListSubscriptions(ListAPIView):
+    """View-класс для получения списка подписок текущего пользователя."""
     pagination_class = PageNumberPagination
     serializer_class = SubcriptionSerializer
 
     def get_queryset(self):
+        """Метод получает все подписки текущего пользователя."""
         return Subscription.objects.filter(
             current_user=self.request.user
         ).order_by('id')
+
+
+class APISubscription(APIView):
+    """
+    View-класс для добавления и удаления пользователя из 
+    списка подписок текущего пользователя.
+    """
+    def post(self, request, pk):
+        """Добавление пользователя в подписки текущего пользователя."""
+        user = get_object_or_404(User, id=pk)
+        subscription = Subscription.objects.create(
+            current_user=request.user,
+            user=user
+        )
+        serializer = SubcriptionSerializer(subscription, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        """Удаление пользователя из подпискок текущего пользователя."""
+        user = get_object_or_404(User, id=pk)
+        subscription = get_object_or_404(
+            Subscription,
+            current_user=request.user,
+            user=user
+        )
+        if subscription:
+            subscription.delete()
+            return Response(
+                {"detail": "Успешная отписка."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        return Response(
+            {"detail": "Стпаница не найдена."},
+            status=status.HTTP_404_NOT_FOUND
+        )

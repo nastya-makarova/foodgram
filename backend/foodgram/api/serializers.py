@@ -60,7 +60,10 @@ class UserSerializer(serializers.ModelSerializer):
         Метод проверяет, подписан ли текущий пользовтаель
         на другого пользователя.
         """
-        current_user = self.context['request'].user
+        if obj:
+            current_user = obj
+        else:
+            current_user = self.context['request'].user
         if current_user.is_authenticated:
             return Subscription.objects.filter(
                 current_user=current_user,
@@ -71,7 +74,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserShowSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для отображения объекта модели 
+    Сериализатор для отображения объекта модели
     User после его создания.
     """
 
@@ -94,6 +97,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         fields = ('email', 'username', 'first_name', 'last_name', 'password')
 
     def validate_username(self, value):
+        """Метод проверяет юзернейм пользователя."""
         username_pattern = r"^[\w.@+-]+\Z"
         if value == "me":
             raise serializers.ValidationError(
@@ -324,10 +328,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
+        """Переопределяет метод для изменения объекта модели Recipe."""
         instance.name = validated_data.get('name', instance.name)
         instance.image = validated_data.get('image', instance.image)
         instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
+        instance.cooking_time = validated_data.get(
+            'cooking_time',
+            instance.cooking_time
+        )
 
         if 'tags' not in validated_data:
             instance.save()
@@ -361,6 +369,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class RecipeResponseSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Recipe. Используется при формирование ответов на запросы."""
     image = serializers.SerializerMethodField('get_image_url')
 
     class Meta:
@@ -375,6 +384,7 @@ class RecipeResponseSerializer(serializers.ModelSerializer):
 
 
 class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
+    """Сериализатор для модели ShortLink."""
 
     class Meta:
         model = ShortLinkRecipe
@@ -382,6 +392,7 @@ class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
 
 
 class ShoppingListSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели ShoppingList."""
     recipe = RecipeResponseSerializer()
 
     class Meta:
@@ -389,11 +400,16 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         fields = ('recipe',)
 
     def to_representation(self, instance):
+        """
+        Метод изменяет формат вывода данных для рецепта,
+        связанного со списком покупок.
+        """
         representation = super().to_representation(instance)
         return representation['recipe']
 
 
 class FavoritesSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Favorite."""
     recipe = RecipeResponseSerializer()
 
     class Meta:
@@ -401,5 +417,53 @@ class FavoritesSerializer(serializers.ModelSerializer):
         fields = ('recipe',)
 
     def to_representation(self, instance):
+        """
+        Метод переопределяет стандартное поведение сериализатора
+        и возвращает только данные
+        о рецепте, ассоциированном с объектом Favorite.
+        """
         representation = super().to_representation(instance)
         return representation['recipe']
+
+
+class UserSubscriptionSerializer(UserSerializer):
+    """
+    Сериализатор для модели User, является родительским
+    сериализатором для сериализатора модели Подписок.
+    """
+    recipes = serializers.SerializerMethodField('get_recipes')
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
+
+    def get_recipes(self, context):
+        """
+        Получает список рецептов, созданных пользователем,
+        на котрого подписан текущий пользователь.
+        """
+        recipes = Recipe.objects.filter(author=context)
+        serializer = RecipeResponseSerializer(recipes, many=True)
+        return serializer.data
+
+    def get_recipes_count(self, context):
+        """  
+        Получает количество рецептов, созданных пользователем,
+        на котрого подписан текущий пользователь.
+        """
+        return Recipe.objects.filter(author=context).count()
+
+
+class SubcriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Subscription."""
+    user = UserSubscriptionSerializer()
+
+    class Meta:
+        model = Subscription
+        fields = ('user',)
+
+    def to_representation(self, instance):
+        """Метод изменяет тандартное поведение сериализатора."""
+        representation = super().to_representation(instance)
+        return representation['user']

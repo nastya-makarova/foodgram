@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
 from rest_framework import filters, mixins, status, viewsets
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -23,6 +24,7 @@ from .serializers import (
     RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
     ShoppingListSerializer,
+    SubcriptionSerializer,
     TagSerializer,
     UserSerializer,
     UserCreateSerializer,
@@ -38,6 +40,7 @@ from recipes.models import (
     Tag,
     ShoppingList
 )
+from users.models import Subscription
 
 User = get_user_model()
 
@@ -268,3 +271,50 @@ class APIFavorite(APIView):
                 {'detail': 'Ошибка удаления из избранного.'},
                 status=status.HTTP_204_NO_CONTENT
             )
+
+
+class APIListSubscriptions(ListAPIView):
+    """View-класс для получения списка подписок текущего пользователя."""
+    pagination_class = PageNumberPagination
+    serializer_class = SubcriptionSerializer
+
+    def get_queryset(self):
+        """Метод получает все подписки текущего пользователя."""
+        return Subscription.objects.filter(
+            current_user=self.request.user
+        ).order_by('id')
+
+
+class APISubscription(APIView):
+    """
+    View-класс для добавления и удаления пользователя из 
+    списка подписок текущего пользователя.
+    """
+    def post(self, request, pk):
+        """Добавление пользователя в подписки текущего пользователя."""
+        user = get_object_or_404(User, id=pk)
+        subscription = Subscription.objects.create(
+            current_user=request.user,
+            user=user
+        )
+        serializer = SubcriptionSerializer(subscription, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        """Удаление пользователя из подпискок текущего пользователя."""
+        user = get_object_or_404(User, id=pk)
+        subscription = get_object_or_404(
+            Subscription,
+            current_user=request.user,
+            user=user
+        )
+        if subscription:
+            subscription.delete()
+            return Response(
+                {"detail": "Успешная отписка."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        return Response(
+            {"detail": "Стпаница не найдена."},
+            status=status.HTTP_404_NOT_FOUND
+        )

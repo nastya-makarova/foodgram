@@ -60,7 +60,11 @@ class UserSerializer(serializers.ModelSerializer):
         Метод проверяет, подписан ли текущий пользовтаель
         на другого пользователя.
         """
-        current_user = self.context['request'].user
+        if obj:
+            current_user = obj
+        else:
+            current_user = self.context['request'].user
+        # current_user = self.context['request'].user
         if current_user.is_authenticated:
             return Subscription.objects.filter(
                 current_user=current_user,
@@ -403,3 +407,30 @@ class FavoritesSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         return representation['recipe']
+
+
+class UserSubscriptionSerializer(UserSerializer):
+    recipes = serializers.SerializerMethodField('get_recipes')
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
+
+    def get_recipes(self, context):
+        author = self.context['request'].user
+        recipes = Recipe.objects.filter(author=author)
+        serializer = RecipeResponseSerializer(recipes, many=True)
+        return serializer.data
+
+    def get_recipes_count(self, context):
+        author = self.context['request'].user
+        return Recipe.objects.filter(author=author).count()
+
+
+class SubcriptionSerializer(serializers.ModelSerializer):
+    user = UserSubscriptionSerializer()
+
+    class Meta:
+        model = Subscription
+        fields = ('user',)

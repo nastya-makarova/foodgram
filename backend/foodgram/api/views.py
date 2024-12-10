@@ -23,6 +23,7 @@ from .serializers import (
     RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
     ShoppingListSerializer,
+    SubcriptionSerializer,
     TagSerializer,
     UserSerializer,
     UserCreateSerializer,
@@ -38,6 +39,7 @@ from recipes.models import (
     Tag,
     ShoppingList
 )
+from users.models import Subscription
 
 User = get_user_model()
 
@@ -268,3 +270,10 @@ class APIFavorite(APIView):
                 {'detail': 'Ошибка удаления из избранного.'},
                 status=status.HTTP_204_NO_CONTENT
             )
+
+
+class APISubscriptions(APIView):
+    def get(self, request):
+        subscriptions = Subscription.objects.filter(current_user=request.user)
+        serializer = SubcriptionSerializer(subscriptions, many=True, context={'request': request})
+        return Response(serializer.data)

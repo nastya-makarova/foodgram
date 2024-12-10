@@ -434,3 +434,7 @@ class SubcriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = ('user',)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return representation['user']

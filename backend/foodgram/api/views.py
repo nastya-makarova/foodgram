@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
 from rest_framework import filters, mixins, status, viewsets
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -272,8 +273,11 @@ class APIFavorite(APIView):
             )
 
 
-class APISubscriptions(APIView):
-    def get(self, request):
-        subscriptions = Subscription.objects.filter(current_user=request.user)
-        serializer = SubcriptionSerializer(subscriptions, many=True, context={'request': request})
-        return Response(serializer.data)
+class APISubscriptions(ListAPIView):
+    pagination_class = PageNumberPagination
+    serializer_class = SubcriptionSerializer
+
+    def get_queryset(self):
+        return Subscription.objects.filter(
+            current_user=self.request.user
+        ).order_by('id')

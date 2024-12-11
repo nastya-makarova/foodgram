@@ -4,9 +4,10 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404, redirect
+from djoser.permissions import CurrentUserOrAdmin
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -14,6 +15,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
+from .permissions import UnauthorizedOrAdmin, RecipePermisssion
 from .serializers import (
     AvatarUpdateSerializer,
     FavoritesSerializer,
@@ -80,6 +82,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+    permission_classes = (RecipePermisssion,)
 
     def get_serializer_class(self):
         """Метод определяет, какой сериализатор использовать.
@@ -89,7 +92,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeSerializer
         return RecipeCreateSerializer
 
-    @action(detail=True, url_path='get-link')
+    @action(
+        detail=True,
+        url_path='get-link',
+        permission_classes=(permissions.AllowAny,)
+    )
     def get_recipe_short_link(self, request, pk=None):
         """Метод позволяет получить короткую ссылку для рецепта."""
         recipe = self.get_object()
@@ -108,6 +115,7 @@ class FoodgramUserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = PageNumberPagination
+    permission_classes = ()
 
     def get_serializer_class(self):
         """Метод определяет, какой сериализатор использовать.
@@ -123,10 +131,11 @@ class FoodgramUserViewSet(UserViewSet):
     @action(
         methods=['put', 'delete'],
         url_path='me/avatar',
-        detail=False
+        detail=False,
+        permission_classes=(CurrentUserOrAdmin,)
     )
     def update_avatar(self, request):
-        """Метод для изменения аватара текущего пользователя."""
+        """Метод изменяет аватара текущего пользователя."""
 
         current_user = request.user
         if request.method == 'DELETE':
@@ -150,9 +159,20 @@ class FoodgramUserViewSet(UserViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def get_permissions(self):
+        if self.action == 'me':
+            return (permissions.IsAuthenticated(),)
+
+        if self.action == 'create':
+            return (UnauthorizedOrAdmin(),)
+
+        return super().get_permissions()
+
 
 class APIDownloadShoppingList(APIView):
     """View-класс для загрузки списка покупок в формате TXT."""
+    permission_classes = (permissions.IsAuthenticated,)
+
     def create_txt_file(self, items):
         """Создание TXT файла."""
         response = HttpResponse(content_type='text/plain')
@@ -204,6 +224,8 @@ class APIShoppingList(APIView):
     View-класс для добавления и удаления рецептов
     из списка покупок пользователя.
     """
+    permission_classes = (permissions.IsAuthenticated,)
+
     def post(self, request, pk):
         """Добавление рецепта в список покупок пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
@@ -242,6 +264,8 @@ class APIFavorite(APIView):
     View-класс для добавления и удаления рецептов
     из избранного пользователя.
     """
+    permission_classes = (permissions.IsAuthenticated,)
+
     def post(self, request, pk):
         """Добавление рецепта в избранное пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
@@ -277,6 +301,7 @@ class APIListSubscriptions(ListAPIView):
     """View-класс для получения списка подписок текущего пользователя."""
     pagination_class = PageNumberPagination
     serializer_class = SubcriptionSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         """Метод получает все подписки текущего пользователя."""
@@ -287,9 +312,11 @@ class APIListSubscriptions(ListAPIView):
 
 class APISubscription(APIView):
     """
-    View-класс для добавления и удаления пользователя из 
+    View-класс для добавления и удаления пользователя из
     списка подписок текущего пользователя.
     """
+    permission_classes = (permissions.IsAuthenticated,)
+
     def post(self, request, pk):
         """Добавление пользователя в подписки текущего пользователя."""
         user = get_object_or_404(User, id=pk)

@@ -1,6 +1,6 @@
 import django_filters
 
-from recipes.models import Favorite, Tag, Recipe
+from recipes.models import Tag, Recipe
 
 
 class RecipeFilter(django_filters.FilterSet):
@@ -19,7 +19,7 @@ class RecipeFilter(django_filters.FilterSet):
         field_name='tags__slug', to_field_name='slug',
         queryset=Tag.objects.all()
     )
-    is_favorite = django_filters.BooleanFilter(method='filter_is_favorite')
+    is_favorited = django_filters.BooleanFilter(method='filter_is_favorited')
     is_in_shopping_cart = django_filters.BooleanFilter(
         method='filter_is_in_shopping_cart'
     )
@@ -28,11 +28,14 @@ class RecipeFilter(django_filters.FilterSet):
         model = Recipe
         fields = ('author', 'tags')
 
-    def filter_is_favorite(self, queryset, name, value):
+    def filter_is_favorited(self, queryset, name, value):
         """Метод фильтрует рецепты по наличию
         в избранном для текущего пользователя.
         """
-        current_user = self.request.user
+        if self.request.user:
+            current_user = self.request.user
+        else:
+            return None
         if value is not None:
             if value == 1:
                 return queryset.filter(
@@ -61,4 +64,3 @@ class RecipeFilter(django_filters.FilterSet):
                 )
         else:
             return queryset
-         

@@ -191,7 +191,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientRecipeSerializer(
         source='ingredientrecipe', many=True
     )
-    is_favorite = serializers.SerializerMethodField(default=False)
+    is_favorited = serializers.SerializerMethodField(default=False)
     is_in_shopping_cart = serializers.SerializerMethodField(default=False)
     image = serializers.SerializerMethodField('get_image_url')
 
@@ -202,7 +202,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             'tags',
             'author',
             'ingredients',
-            'is_favorite',
+            'is_favorited',
             'is_in_shopping_cart',
             'name',
             'image',
@@ -211,7 +211,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('author', 'image')
 
-    def get_is_favorite(self, obj):
+    def get_is_favorited(self, obj):
         """
         Метод проверяет, есть ли рецепт в избранном
         у текущего пользователя.

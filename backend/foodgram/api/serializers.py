@@ -16,6 +16,7 @@ from recipes.models import (
     User
 )
 from users.models import Subscription
+from foodgram.constants import REQUIERED_FIELDS
 
 
 class Base64ImageField(serializers.ImageField):
@@ -181,13 +182,18 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для модели IngredientRecipe при создании рецепта."""
-    ingredient = serializers.PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all()
+    # ingredient = serializers.PrimaryKeyRelatedField(
+    #     queryset=Ingredient.objects.all(), required=True
+    # )
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
     )
 
     class Meta:
         model = IngredientRecipe
-        fields = ('ingredient', 'amount')
+        fields = ('id', 'name', 'measurement_unit', 'amount')
 
     def validate_amount(self, value):
         """Метод проверяет, что введеное количество ингредиента больше 0."""
@@ -301,23 +307,99 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def to_internal_value(self, data):
-        """
-        Метод преобразует входные данные для ингредиентов при создании рецепта.
-        Преобразованные данные, где поле 'ingredients' будет списком словарей
-        с ключами 'id' и 'amount'.
-        """
-        if 'ingredients' in data:
-            ingredients = []
-            for ingredient in data['ingredients']:
-                ingredients.append(
-                    {
-                        'id': ingredient['id'],
-                        'amount': ingredient['amount']
-                    }
+    def validate(self, data):
+        """Метод проверяет корректность введеных данных для ингредиентов."""
+        ingredients = data.get('ingredients')
+        print(ingredients)
+        igredients_ids = set()
+
+        if ingredients == []:
+            raise serializers.ValidationError(
+                {'ingredients': ['Это поле обязательно для заполнения.']},
+                code='required'
+            )
+        for ingredient in ingredients:
+            if not Ingredient.objects.filter(id=ingredient['id']).exists():
+                raise serializers.ValidationError(
+                    {'ingredients': ['Такого ингредиента не существует.']},
+                    code='invalid'
                 )
-            data['ingredients'] = ingredients
+
+            if ingredient['amount'] <= 0:
+                raise serializers.ValidationError(
+                    {'amount': ['Количество должно быть больше 0.']},
+                    code='invalid'
+                )
+
+            if ingredient['id'] in igredients_ids:
+                raise serializers.ValidationError(
+                    {'ingredients': ['Вы уже указали данный ингредиент.']},
+                    code='invalid'
+                )
+            igredients_ids.add(ingredient['id'])
+
+            if data.get('tags') == []:
+                raise serializers.ValidationError(
+                    {'tags': ['Это поле обязательно для заполнения.']},
+                    code='required'
+                )
+
+            if len(data.get('tags')) != len(set(data.get('tags'))):
+                raise serializers.ValidationError(
+                    {'tags': ['Вы уже указали данный тег.']},
+                    code='invalid'
+                )
+            for tag_id in data.get('tags'):
+                if not Tag.objects.filter(id=tag_id).exists():
+                    raise serializers.ValidationError(
+                        {'ingredients': ['Такого тега не существует.']},
+                        code='invalid'
+                    )
+
+            if data.get('image') == '':
+                raise serializers.ValidationError(
+                    {'image': ['Это поле обязательно для заполнения.']},
+                    code='required'
+                )
+            if data.get('name') == '':
+                raise serializers.ValidationError(
+                    {'name': ['Это поле обязательно для заполнения.']},
+                    code='required'
+                )
+        for ingredient in ingredients:
+            ingredients.append(
+                {
+                    'id': ingredient['id'],
+                    'amount': ingredient['amount']
+                }
+            )
+        data['ingredients'] = ingredients
+        print(data)
         return data
+
+    # def to_internal_value(self, data):
+    #     """
+    #     Метод преобразует входные данные для ингредиентов при создании рецепта.
+    #     Преобразованные данные, где поле 'ingredients' будет списком словарей
+    #     с ключами 'id' и 'amount'.
+    #     """
+    #     ingredients = []
+    #     for field in REQUIERED_FIELDS:
+    #         if field not in data:
+    #             raise serializers.ValidationError(
+    #                 {field: ['Это поле обязательно для заполнения.']},
+    #                 code='required'
+    #             )
+        
+    #     for ingredient in data.get('ingredients'):
+    #         ingredients.append(
+    #             {
+    #                 'id': ingredient['id'],
+    #                 'amount': ingredient['amount']
+    #             }
+    #         )
+    #     data['ingredients'] = ingredients
+    #     return data
 
     def create(self, validated_data):
         """Переопределят метод для создания объекта модели Recipe.

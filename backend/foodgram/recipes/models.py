@@ -73,7 +73,9 @@ class Recipe(models.Model):
     name = models.CharField(
         'Имя',
         max_length=MAX_LENGTH_NAME,
-        help_text='Название рецепта, не более 256 символов.'
+        help_text='Название рецепта, не более 256 символов.',
+        blank=False,
+        null=False
     )
     image = models.ImageField(
         'Фото рецепта',

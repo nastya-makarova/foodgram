@@ -11,7 +11,7 @@ from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
@@ -59,6 +59,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Tag."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -67,6 +68,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('^name',)
+    permission_classes = (permissions.AllowAny,)
 
     def get_queryset(self):
         keyword = self.request.query_params.get('name', '')
@@ -78,7 +80,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -106,7 +108,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
         return Response({
-            'short_link': short_link_url
+            'short-link': short_link_url
         })
 
 
@@ -114,7 +116,7 @@ class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     permission_classes = ()
 
     def get_serializer_class(self):
@@ -124,7 +126,7 @@ class FoodgramUserViewSet(UserViewSet):
         if self.action == 'set_password':
             return SetPasswordSerializer
 
-        if self.action in ('list', 'retrieve'):
+        if self.action in ('list', 'retrieve', 'me'):
             return UserSerializer
         return UserCreateSerializer
 

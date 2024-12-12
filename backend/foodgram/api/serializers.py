@@ -4,15 +4,17 @@ import re
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 
-from recipes.models import (Favorite,
-                            Ingredient,
-                            IngredientRecipe,
-                            Recipe,
-                            ShortLinkRecipe,
-                            ShoppingList,
-                            Tag,
-                            TagRecipe,
-                            User)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientRecipe,
+    Recipe,
+    ShortLinkRecipe,
+    ShoppingList,
+    Tag,
+    TagRecipe, 
+    User
+)
 from users.models import Subscription
 
 
@@ -94,7 +96,19 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', 'password')
+        fields = (
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password'
+        )
+
+    def create(self, validated_data):
+        user = User(**validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
+        return user    
 
     def validate_username(self, value):
         """Метод проверяет юзернейм пользователя."""
@@ -136,7 +150,7 @@ class AvatarUpdateSerializer(serializers.ModelSerializer):
         преобразуя аватар в ссылку на изображение."""
         representation = super().to_representation(instance)
         avatar_url = instance.avatar.url
-        representation['avatar'] = avatar_url 
+        representation['avatar'] = avatar_url
         return representation
 
 
@@ -435,7 +449,6 @@ class UserSubscriptionSerializer(UserSerializer):
     recipes_count = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
-        model = User
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
 
     def get_recipes(self, context):

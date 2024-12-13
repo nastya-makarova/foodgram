@@ -62,4 +62,8 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        unique_together = ('current_user', 'user')
+        constraints = (
+            models.UniqueConstraint(
+                fields=['user', 'current_user'], name="unique_subscription"
+            ),
+        )

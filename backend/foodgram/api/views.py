@@ -31,6 +31,7 @@ from .serializers import (
     UserSerializer,
     UserCreateSerializer,
     UserShowSerializer,
+    UserSubscriptionSerializer
 )
 
 from recipes.models import (
@@ -301,7 +302,7 @@ class APIFavorite(APIView):
 
 class APIListSubscriptions(ListAPIView):
     """View-класс для получения списка подписок текущего пользователя."""
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     serializer_class = SubcriptionSerializer
     permission_classes = (permissions.IsAuthenticated,)
 

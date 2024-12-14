@@ -208,11 +208,12 @@ class ShortLinkRecipe(models.Model):
         related_name='short_link',
         verbose_name='Короткая ссылка'
     )
-    short_link = models.CharField(max_length=MAX_LENGTH_SHORT_LINK,
-                                  unique=True,
-                                  blank=True,
-                                  null=True
-                                )
+    short_link = models.CharField(
+        max_length=MAX_LENGTH_SHORT_LINK,
+        unique=True,
+        blank=True,
+        null=True
+    )
 
     def save(self, *args, **kwargs):
         if not self.short_link:

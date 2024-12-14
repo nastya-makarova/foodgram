@@ -1,6 +1,5 @@
 import django_filters
-
-from recipes.models import Tag, Recipe
+from recipes.models import Recipe, Tag
 
 
 class RecipeFilter(django_filters.FilterSet):
@@ -36,7 +35,8 @@ class RecipeFilter(django_filters.FilterSet):
             current_user = self.request.user
         else:
             return None
-        if value is not None:
+
+        if current_user.is_authenticated and value is not None:
             if value == 1:
                 return queryset.filter(
                     favorites__current_user=current_user.id
@@ -53,9 +53,8 @@ class RecipeFilter(django_filters.FilterSet):
         в списке покупок для текущего пользователя.
         """
         current_user = self.request.user
-        if not current_user.is_authenticated:
-            return queryset
-        if value is not None:
+
+        if current_user.is_authenticated and value is not None:
             if value:
                 return queryset.filter(
                     shopping_lists__current_user=current_user

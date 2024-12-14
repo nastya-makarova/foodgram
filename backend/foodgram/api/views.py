@@ -1,5 +1,3 @@
-from http import HTTPStatus
-
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -7,11 +5,11 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.permissions import CurrentUserOrAdmin
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
-from rest_framework import filters, mixins, permissions, status, viewsets
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
@@ -20,17 +18,13 @@ from .serializers import (
     AvatarUpdateSerializer,
     FavoritesSerializer,
     IngredientSerializer,
-    IngredientRecipeSerializer,
-    IngredientRecipeCreateSerializer,
     RecipeSerializer, RecipeCreateSerializer,
-    RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
     ShoppingListSerializer,
     SubcriptionSerializer,
     TagSerializer,
     UserSerializer,
-    UserCreateSerializer,
-    UserShowSerializer,
+    UserCreateSerializer
 )
 
 from recipes.models import (
@@ -106,7 +100,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
-        short_link_url = f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
+        short_link_url = (
+            f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
+        )
         return Response({
             'short-link': short_link_url
         })
@@ -178,7 +174,9 @@ class APIDownloadShoppingList(APIView):
     def create_txt_file(self, items):
         """Создание TXT файла."""
         response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
+        response['Content-Disposition'] = (
+            'attachment; filename="shopping_list.txt"'
+        )
         for item in items:
             list_item = (
                 f"{item['name']} - {item['amount']} {item['measurement_unit']}"
@@ -233,7 +231,10 @@ class APIShoppingList(APIView):
         recipe = get_object_or_404(Recipe, id=pk)
         current_user = request.user
 
-        if ShoppingList.objects.filter(current_user=current_user, recipe=recipe).exists():
+        if ShoppingList.objects.filter(
+            current_user=current_user,
+            recipe=recipe
+        ).exists():
             return Response('Вы уже добавили рецепт в список покупок.',
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -276,7 +277,10 @@ class APIFavorite(APIView):
         """Добавление рецепта в избранное пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
 
-        if Favorite.objects.filter(current_user=request.user, recipe=recipe).exists():
+        if Favorite.objects.filter(
+            current_user=request.user,
+            recipe=recipe
+        ).exists():
             return Response('Вы уже добавили рецепт в избранное.',
                             status=status.HTTP_400_BAD_REQUEST)
         favorite_recipe = Favorite.objects.create(
@@ -335,7 +339,9 @@ class APISubscription(APIView):
             return Response('Вы не можете подписываться на самого себя',
                             status=status.HTTP_400_BAD_REQUEST)
 
-        if Subscription.objects.filter(current_user=current_user, user=user).exists():
+        if Subscription.objects.filter(
+            current_user=current_user, user=user
+        ).exists():
             return Response('Вы уже подписаны на этого пользователя',
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -343,7 +349,10 @@ class APISubscription(APIView):
             current_user=current_user,
             user=user
         )
-        serializer = SubcriptionSerializer(subscription, context={'request': request})
+        serializer = SubcriptionSerializer(
+            subscription,
+            context={'request': request}
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, pk):

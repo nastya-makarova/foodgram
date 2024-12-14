@@ -1,5 +1,3 @@
-from http import HTTPStatus
-
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -7,11 +5,11 @@ from django.shortcuts import get_object_or_404, redirect
 from djoser.permissions import CurrentUserOrAdmin
 from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet
-from rest_framework import filters, mixins, permissions, status, viewsets
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
@@ -20,17 +18,13 @@ from .serializers import (
     AvatarUpdateSerializer,
     FavoritesSerializer,
     IngredientSerializer,
-    IngredientRecipeSerializer,
-    IngredientRecipeCreateSerializer,
     RecipeSerializer, RecipeCreateSerializer,
-    RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
     ShoppingListSerializer,
     SubcriptionSerializer,
     TagSerializer,
     UserSerializer,
-    UserCreateSerializer,
-    UserShowSerializer,
+    UserCreateSerializer
 )
 
 from recipes.models import (
@@ -59,6 +53,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Tag."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -67,6 +62,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('^name',)
+    permission_classes = (permissions.AllowAny,)
 
     def get_queryset(self):
         keyword = self.request.query_params.get('name', '')
@@ -78,7 +74,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -104,9 +100,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
-        short_link_url = f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
+        short_link_url = (
+            f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
+        )
         return Response({
-            'short_link': short_link_url
+            'short-link': short_link_url
         })
 
 
@@ -114,7 +112,7 @@ class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     permission_classes = ()
 
     def get_serializer_class(self):
@@ -124,7 +122,7 @@ class FoodgramUserViewSet(UserViewSet):
         if self.action == 'set_password':
             return SetPasswordSerializer
 
-        if self.action in ('list', 'retrieve'):
+        if self.action in ('list', 'retrieve', 'me'):
             return UserSerializer
         return UserCreateSerializer
 
@@ -176,7 +174,9 @@ class APIDownloadShoppingList(APIView):
     def create_txt_file(self, items):
         """Создание TXT файла."""
         response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
+        response['Content-Disposition'] = (
+            'attachment; filename="shopping_list.txt"'
+        )
         for item in items:
             list_item = (
                 f"{item['name']} - {item['amount']} {item['measurement_unit']}"
@@ -230,6 +230,14 @@ class APIShoppingList(APIView):
         """Добавление рецепта в список покупок пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
         current_user = request.user
+
+        if ShoppingList.objects.filter(
+            current_user=current_user,
+            recipe=recipe
+        ).exists():
+            return Response('Вы уже добавили рецепт в список покупок.',
+                            status=status.HTTP_400_BAD_REQUEST)
+
         shopping_list = ShoppingList.objects.create(
             current_user=current_user,
             recipe=recipe
@@ -241,11 +249,10 @@ class APIShoppingList(APIView):
         """Удаление рецепта в список покупок пользователя."""
         current_user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-        shopping_list = get_object_or_404(
-            ShoppingList,
+        shopping_list = ShoppingList.objects.filter(
             current_user=current_user,
             recipe=recipe
-        )
+        ).filter()
         if shopping_list:
             shopping_list.delete()
             return Response(
@@ -269,6 +276,13 @@ class APIFavorite(APIView):
     def post(self, request, pk):
         """Добавление рецепта в избранное пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
+
+        if Favorite.objects.filter(
+            current_user=request.user,
+            recipe=recipe
+        ).exists():
+            return Response('Вы уже добавили рецепт в избранное.',
+                            status=status.HTTP_400_BAD_REQUEST)
         favorite_recipe = Favorite.objects.create(
             current_user=request.user,
             recipe=recipe
@@ -279,11 +293,10 @@ class APIFavorite(APIView):
     def delete(self, request, pk):
         """Удаление рецепта в избранное пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
-        favorite_recipe = get_object_or_404(
-            Favorite,
+        favorite_recipe = Favorite.objects.filter(
             current_user=request.user,
             recipe=recipe
-        )
+        ).first()
         if favorite_recipe:
             favorite_recipe.delete()
             return Response(
@@ -293,13 +306,13 @@ class APIFavorite(APIView):
         else:
             return Response(
                 {'detail': 'Ошибка удаления из избранного.'},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_400_BAD_REQUEST
             )
 
 
 class APIListSubscriptions(ListAPIView):
     """View-класс для получения списка подписок текущего пользователя."""
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     serializer_class = SubcriptionSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -320,21 +333,35 @@ class APISubscription(APIView):
     def post(self, request, pk):
         """Добавление пользователя в подписки текущего пользователя."""
         user = get_object_or_404(User, id=pk)
+        current_user = request.user
+
+        if user == current_user:
+            return Response('Вы не можете подписываться на самого себя',
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if Subscription.objects.filter(
+            current_user=current_user, user=user
+        ).exists():
+            return Response('Вы уже подписаны на этого пользователя',
+                            status=status.HTTP_400_BAD_REQUEST)
+
         subscription = Subscription.objects.create(
-            current_user=request.user,
+            current_user=current_user,
             user=user
         )
-        serializer = SubcriptionSerializer(subscription, context={'request': request})
+        serializer = SubcriptionSerializer(
+            subscription,
+            context={'request': request}
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, pk):
         """Удаление пользователя из подпискок текущего пользователя."""
         user = get_object_or_404(User, id=pk)
-        subscription = get_object_or_404(
-            Subscription,
+        subscription = Subscription.objects.filter(
             current_user=request.user,
             user=user
-        )
+        ).first()
         if subscription:
             subscription.delete()
             return Response(
@@ -342,6 +369,6 @@ class APISubscription(APIView):
                 status=status.HTTP_204_NO_CONTENT
             )
         return Response(
-            {"detail": "Стпаница не найдена."},
-            status=status.HTTP_404_NOT_FOUND
+            {"detail": "Подписка не найдена."},
+            status=status.HTTP_400_BAD_REQUEST
         )

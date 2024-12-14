@@ -31,7 +31,6 @@ from .serializers import (
     UserSerializer,
     UserCreateSerializer,
     UserShowSerializer,
-    UserSubscriptionSerializer
 )
 
 from recipes.models import (
@@ -233,6 +232,11 @@ class APIShoppingList(APIView):
         """Добавление рецепта в список покупок пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
         current_user = request.user
+
+        if ShoppingList.objects.filter(current_user=current_user, recipe=recipe).exists():
+            return Response('Вы уже добавили рецепт в список покупок.',
+                            status=status.HTTP_400_BAD_REQUEST)
+
         shopping_list = ShoppingList.objects.create(
             current_user=current_user,
             recipe=recipe
@@ -244,11 +248,10 @@ class APIShoppingList(APIView):
         """Удаление рецепта в список покупок пользователя."""
         current_user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
-        shopping_list = get_object_or_404(
-            ShoppingList,
+        shopping_list = ShoppingList.objects.filter(
             current_user=current_user,
             recipe=recipe
-        )
+        ).filter()
         if shopping_list:
             shopping_list.delete()
             return Response(
@@ -272,6 +275,10 @@ class APIFavorite(APIView):
     def post(self, request, pk):
         """Добавление рецепта в избранное пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
+
+        if Favorite.objects.filter(current_user=request.user, recipe=recipe).exists():
+            return Response('Вы уже добавили рецепт в избранное.',
+                            status=status.HTTP_400_BAD_REQUEST)
         favorite_recipe = Favorite.objects.create(
             current_user=request.user,
             recipe=recipe
@@ -282,11 +289,10 @@ class APIFavorite(APIView):
     def delete(self, request, pk):
         """Удаление рецепта в избранное пользователя."""
         recipe = get_object_or_404(Recipe, id=pk)
-        favorite_recipe = get_object_or_404(
-            Favorite,
+        favorite_recipe = Favorite.objects.filter(
             current_user=request.user,
             recipe=recipe
-        )
+        ).first()
         if favorite_recipe:
             favorite_recipe.delete()
             return Response(
@@ -296,7 +302,7 @@ class APIFavorite(APIView):
         else:
             return Response(
                 {'detail': 'Ошибка удаления из избранного.'},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -323,8 +329,18 @@ class APISubscription(APIView):
     def post(self, request, pk):
         """Добавление пользователя в подписки текущего пользователя."""
         user = get_object_or_404(User, id=pk)
+        current_user = request.user
+
+        if user == current_user:
+            return Response('Вы не можете подписываться на самого себя',
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if Subscription.objects.filter(current_user=current_user, user=user).exists():
+            return Response('Вы уже подписаны на этого пользователя',
+                            status=status.HTTP_400_BAD_REQUEST)
+
         subscription = Subscription.objects.create(
-            current_user=request.user,
+            current_user=current_user,
             user=user
         )
         serializer = SubcriptionSerializer(subscription, context={'request': request})
@@ -333,11 +349,10 @@ class APISubscription(APIView):
     def delete(self, request, pk):
         """Удаление пользователя из подпискок текущего пользователя."""
         user = get_object_or_404(User, id=pk)
-        subscription = get_object_or_404(
-            Subscription,
+        subscription = Subscription.objects.filter(
             current_user=request.user,
             user=user
-        )
+        ).first()
         if subscription:
             subscription.delete()
             return Response(
@@ -345,6 +360,6 @@ class APISubscription(APIView):
                 status=status.HTTP_204_NO_CONTENT
             )
         return Response(
-            {"detail": "Стпаница не найдена."},
-            status=status.HTTP_404_NOT_FOUND
+            {"detail": "Подписка не найдена."},
+            status=status.HTTP_400_BAD_REQUEST
         )

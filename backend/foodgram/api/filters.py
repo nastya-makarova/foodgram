@@ -19,14 +19,14 @@ class RecipeFilter(django_filters.FilterSet):
         field_name='tags__slug', to_field_name='slug',
         queryset=Tag.objects.all()
     )
-    is_favorited = django_filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = django_filters.BooleanFilter(
+    is_favorited = django_filters.NumberFilter(method='filter_is_favorited')
+    is_in_shopping_cart = django_filters.NumberFilter(
         method='filter_is_in_shopping_cart'
     )
 
     class Meta:
         model = Recipe
-        fields = ('author', 'tags')
+        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
 
     def filter_is_favorited(self, queryset, name, value):
         """Метод фильтрует рецепты по наличию
@@ -53,14 +53,15 @@ class RecipeFilter(django_filters.FilterSet):
         в списке покупок для текущего пользователя.
         """
         current_user = self.request.user
+        if not current_user.is_authenticated:
+            return queryset
         if value is not None:
-            if value == 1:
+            if value:
                 return queryset.filter(
-                    shopping_lists__current_user=current_user.id
+                    shopping_lists__current_user=current_user
                 )
             else:
                 return queryset.exclude(
                     shopping_lists__current_user=current_user.id
                 )
-        else:
-            return queryset
+        return queryset

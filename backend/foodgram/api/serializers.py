@@ -233,6 +233,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         Метод проверяет, есть ли рецепт в избранном
         у текущего пользователя.
         """
+        if 'request' not in self.context:
+            return False
         current_user = self.context['request'].user
         if current_user.is_authenticated:
             return Favorite.objects.filter(
@@ -246,6 +248,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         Метод проверяет, есть ли рецепт в списке покупок
         у текущего пользователя.
         """
+        if 'request' not in self.context:
+            return False
         current_user = self.context['request'].user
         if current_user.is_authenticated:
             return ShoppingList.objects.filter(

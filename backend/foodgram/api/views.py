@@ -9,7 +9,10 @@ from rest_framework import filters, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import (
+    PageNumberPagination,
+    LimitOffsetPagination
+)
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
@@ -74,7 +77,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = PageNumberPagination
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -177,9 +180,9 @@ class APIDownloadShoppingList(APIView):
         response['Content-Disposition'] = (
             'attachment; filename="shopping_list.txt"'
         )
-        for item in items:
+        for name, data in items.items():
             list_item = (
-                f"{item['name']} - {item['amount']} {item['measurement_unit']}"
+                f"{name} - {data['amount']} {data['measurement_unit']}"
             )
             response.write(f"{list_item}\n")
         return response
@@ -192,7 +195,7 @@ class APIDownloadShoppingList(APIView):
         recipes_for_shopping = ShoppingList.objects.filter(
             current_user=request.user
         )
-        items = []
+        items = {}
         for recipe in recipes_for_shopping:
             ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
             for ingredient in ingredients:
@@ -200,22 +203,14 @@ class APIDownloadShoppingList(APIView):
                     id=ingredient.ingredient.id
                 ).first()
                 amount = ingredient.amount
-                if len(items) == 0:
-                    items.append({
-                        'name': ing_obj.name,
+                if ing_obj.name not in items:
+                    items[ing_obj.name] = {
                         'amount': amount,
                         'measurement_unit': ing_obj.measurement_unit
-                    })
-                for i in range(len(items)):
-                    if ing_obj.name in items[i].values():
-                        items[i]['amount'] += amount
-                        break
-                    else:
-                        items.append({
-                            'name': ing_obj.name,
-                            'amount': amount,
-                            'measurement_unit': ing_obj.measurement_unit
-                        })
+                    }
+                else:
+                    items[ing_obj.name]['amount'] += amount
+
         return self.create_txt_file(items)
 
 

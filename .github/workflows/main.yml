@@ -35,6 +35,8 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
+          npm install jest@latest --save-dev
+          npm install @testing-library/react@latest --save-dev
           npm install --legacy-peer-deps
       - name: Tests with jests
         run: |

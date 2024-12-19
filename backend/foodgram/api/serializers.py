@@ -340,7 +340,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 recipe=recipe,
                 ingredient=ingredient,
                 amount=amount
-                )
+            )
         return recipe
 
     def update(self, instance, validated_data):

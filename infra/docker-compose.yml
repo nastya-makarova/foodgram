@@ -34,7 +34,7 @@ services:
     container_name: foodgram-proxy
     image: nginx:1.25.4-alpine
     ports:
-      - "8000:80"
+      - "8080:80"
     volumes:
       - static:/usr/share/nginx/html/backend_static
       - media:/var/www/foodgram/media/

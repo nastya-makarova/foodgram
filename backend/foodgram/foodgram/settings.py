@@ -25,8 +25,7 @@ SECRET_KEY = 'django-insecure-t!3%+v(j4929l5u+%umv+v639k*lfk76ffgcu5+v8bo^*&1!1j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
 
 AUTH_USER_MODEL = 'users.FoodgramUser'
 

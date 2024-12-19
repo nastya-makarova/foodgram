@@ -340,7 +340,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 recipe=recipe,
                 ingredient=ingredient,
                 amount=amount
-            )
+                )
         return recipe
 
     def update(self, instance, validated_data):
@@ -357,6 +357,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             instance.save()
         else:
             tags_data = validated_data.pop('tags')
+            TagRecipe.objects.filter(recipe=instance).all().delete()
             for tag in tags_data:
                 tag = Tag.objects.get(id=tag.id)
                 TagRecipe.objects.create(recipe=instance, tag=tag)
@@ -365,6 +366,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             instance.save()
         else:
             ingredients_data = validated_data.pop('ingredients')
+            IngredientRecipe.objects.filter(recipe=instance).all().delete()
             for ingredient in ingredients_data:
                 amount = ingredient['amount']
                 ingredient = Ingredient.objects.get(id=ingredient['id'])
@@ -373,7 +375,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                     ingredient=ingredient,
                     amount=amount
                 )
-
         instance.save()
         return instance
 

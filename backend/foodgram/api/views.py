@@ -9,10 +9,7 @@ from rest_framework import filters, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import (
-    PageNumberPagination,
-    LimitOffsetPagination
-)
+from rest_framework.pagination import (LimitOffsetPagination)
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
@@ -77,7 +74,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOffsetPagination
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter

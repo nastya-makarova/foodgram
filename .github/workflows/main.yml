@@ -64,3 +64,39 @@ jobs:
           context: ./backend/
           push: true
           tags: makarovanastya/foodgram-frontend:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: 
+      - backend_tests
+      - build_backend_and_push_to_docker_hub
+      - build_frontend_and_push_to_docker_hub
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Copy docker-compose.yml via ssh
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          source: "./infra/docker-compose.yml"
+          target: "foodgram"
+      - name: Executing remote ssh commands to deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          script: |
+            cd foodgram
+            sudo docker compose pull
+            sudo docker compose down
+            sudo docker compose up
+            sudo docker compose exec backend python manage.py migrate
+            sudo docker compose exec backend python manage.py collectstatic
+            sudo docker compose exec backend cp -r /app/collected_static/. /backend_static/static/
+          

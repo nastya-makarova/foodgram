@@ -9,10 +9,10 @@ from rest_framework import filters, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import (LimitOffsetPagination)
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
+from .pagination import LimitPagePagination
 from .permissions import UnauthorizedOrAdmin, RecipePermisssion
 from .serializers import (
     AvatarUpdateSerializer,
@@ -74,7 +74,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagePagination
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -112,7 +112,7 @@ class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagePagination
     permission_classes = ()
 
     def get_serializer_class(self):
@@ -304,7 +304,7 @@ class APIFavorite(APIView):
 
 class APIListSubscriptions(ListAPIView):
     """View-класс для получения списка подписок текущего пользователя."""
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagePagination
     serializer_class = SubcriptionSerializer
     permission_classes = (permissions.IsAuthenticated,)
 

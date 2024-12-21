@@ -61,7 +61,7 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v4
         with:
-          context: ./backend/
+          context: ./frontend/
           push: true
           tags: makarovanastya/foodgram-frontend:latest
 

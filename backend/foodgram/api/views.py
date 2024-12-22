@@ -1,6 +1,3 @@
-import os
-from dotenv import load_dotenv
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
@@ -41,8 +38,6 @@ from recipes.models import (
     ShoppingList
 )
 from users.models import Subscription
-
-load_dotenv()
 
 User = get_user_model()
 

@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -104,7 +105,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         short_link, created = ShortLinkRecipe.objects.get_or_create(
             recipe=recipe
         )
-        host_name = os.getenv('HOST_NAME')
+        host_name = settings.HOST_NAME
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
             f'{host_name}/s/{serializer.data["short_link"]}'

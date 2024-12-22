@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
@@ -39,6 +40,8 @@ from recipes.models import (
     ShoppingList
 )
 from users.models import Subscription
+
+load_dotenv()
 
 User = get_user_model()
 
@@ -101,7 +104,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         short_link, created = ShortLinkRecipe.objects.get_or_create(
             recipe=recipe
         )
-        host_name = os.getenv('HOST_NAME', '')
+        host_name = os.getenv('HOST_NAME', '127.0.0.1')
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
             f'{host_name}/s/{serializer.data["short_link"]}'

@@ -41,16 +41,6 @@ from users.models import Subscription
 User = get_user_model()
 
 
-def redirect_to_recipe(request, short_link):
-    try:
-        short_link = ShortLinkRecipe.objects.get(short_link=short_link)
-        return redirect(
-            f'https://yafoodgram.zapto.org/recipes/{short_link.recipe.id}'
-        )
-    except ShortLinkRecipe.DoesNotExist:
-        return redirect('/')
-
-
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Tag."""
     queryset = Tag.objects.all()
@@ -103,7 +93,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
-            f'http://yafoodgram.zapto.org/s/{serializer.data["short_link"]}'
+            f'https://yafoodgram.zapto.org/s/{serializer.data["short_link"]}'
         )
         return Response({
             'short-link': short_link_url
@@ -366,3 +356,11 @@ class APISubscription(APIView):
             {"detail": "Подписка не найдена."},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+def redirect_to_recipe(request, short_link):
+    try:
+        short_link = ShortLinkRecipe.objects.get(short_link=short_link)
+        return redirect(f'/recipes/{short_link.recipe.id}')
+    except ShortLinkRecipe.DoesNotExist:
+        return redirect('/')

@@ -101,7 +101,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
-            f'https://yafoodgram.zapto.org/s/{serializer.data["short_link"]}'
+            f'http://yafoodgram.zapto.org/s/{serializer.data["short_link"]}'
         )
         return Response({
             'short-link': short_link_url

@@ -44,9 +44,7 @@ User = get_user_model()
 def redirect_to_recipe(request, short_link):
     try:
         short_link = ShortLinkRecipe.objects.get(short_link=short_link)
-        print(short_link)
-        print(short_link.recipe.id)
-        return redirect('api:recipe-detail', pk=short_link.recipe.id)
+        return redirect(f'/api/recipes/{short_link.recipe.id}')
     except ShortLinkRecipe.DoesNotExist:
         return redirect('/')
 

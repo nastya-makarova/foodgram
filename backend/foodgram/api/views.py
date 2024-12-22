@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -99,9 +101,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         short_link, created = ShortLinkRecipe.objects.get_or_create(
             recipe=recipe
         )
+        host_name = os.getenv('HOST_NAME', '127.0.0.1')
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
-            f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
+            f'{host_name}/s/{serializer.data["short_link"]}'
         )
         return Response({
             'short-link': short_link_url

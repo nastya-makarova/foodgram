@@ -12,6 +12,7 @@ from .views import (
     APIListSubscriptions,
     APISubscription,
 )
+app_name = 'api'
 
 users_v1 = DefaultRouter()
 

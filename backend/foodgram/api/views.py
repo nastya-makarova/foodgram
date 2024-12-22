@@ -44,7 +44,9 @@ User = get_user_model()
 def redirect_to_recipe(request, short_link):
     try:
         short_link = ShortLinkRecipe.objects.get(short_link=short_link)
-        return redirect(f'/recipes/{short_link.recipe.id}')
+        return redirect(
+            f'https://yafoodgram.zapto.org/recipes/{short_link.recipe.id}'
+        )
     except ShortLinkRecipe.DoesNotExist:
         return redirect('/')
 

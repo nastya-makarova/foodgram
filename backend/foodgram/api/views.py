@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -93,7 +94,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
-            f'https://yafoodgram.zapto.org/s/{serializer.data["short_link"]}'
+            f'{settings.HOST_NAME}/s/{serializer.data["short_link"]}'
         )
         return Response({
             'short-link': short_link_url

@@ -166,4 +166,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# HOST_NAME = os.getenv('HOST_NAME', '127.0.0.1')
+HOST_NAME = os.getenv('HOST_NAME', '127.0.0.1')

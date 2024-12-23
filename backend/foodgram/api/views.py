@@ -94,7 +94,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
-            f'{settings.HOST_NAME}/s/{serializer.data["short_link"]}'
+            f'{settings.HOST_NAME}s/{serializer.data["short_link"]}'
         )
         return Response({
             'short-link': short_link_url

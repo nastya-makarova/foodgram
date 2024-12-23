@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -9,10 +10,10 @@ from rest_framework import filters, permissions, status, viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.views import APIView
 
 from .filters import RecipeFilter
+from .pagination import LimitPagePagination
 from .permissions import UnauthorizedOrAdmin, RecipePermisssion
 from .serializers import (
     AvatarUpdateSerializer,
@@ -41,14 +42,6 @@ from users.models import Subscription
 User = get_user_model()
 
 
-def redirect_to_recipe(request, short_link):
-    try:
-        short_link = ShortLinkRecipe.objects.get(short_link=short_link)
-        return redirect('recipe-detail', pk=short_link.recipe.id)
-    except ShortLinkRecipe.DoesNotExist:
-        return redirect('/')
-
-
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Tag."""
     queryset = Tag.objects.all()
@@ -74,7 +67,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с моделью Recipe."""
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagePagination
     http_method_names = ["get", "post", "patch", "delete"]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -101,7 +94,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer = ShortLinkRecipeSeriealizer(short_link)
         short_link_url = (
-            f'http://127.0.0.1:8000/s/{serializer.data["short_link"]}'
+            f'{settings.HOST_NAME}s/{serializer.data["short_link"]}'
         )
         return Response({
             'short-link': short_link_url
@@ -112,7 +105,7 @@ class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagePagination
     permission_classes = ()
 
     def get_serializer_class(self):
@@ -177,9 +170,9 @@ class APIDownloadShoppingList(APIView):
         response['Content-Disposition'] = (
             'attachment; filename="shopping_list.txt"'
         )
-        for item in items:
+        for name, data in items.items():
             list_item = (
-                f"{item['name']} - {item['amount']} {item['measurement_unit']}"
+                f"{name} - {data['amount']} {data['measurement_unit']}"
             )
             response.write(f"{list_item}\n")
         return response
@@ -192,7 +185,7 @@ class APIDownloadShoppingList(APIView):
         recipes_for_shopping = ShoppingList.objects.filter(
             current_user=request.user
         )
-        items = []
+        items = {}
         for recipe in recipes_for_shopping:
             ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
             for ingredient in ingredients:
@@ -200,22 +193,14 @@ class APIDownloadShoppingList(APIView):
                     id=ingredient.ingredient.id
                 ).first()
                 amount = ingredient.amount
-                if len(items) == 0:
-                    items.append({
-                        'name': ing_obj.name,
+                if ing_obj.name not in items:
+                    items[ing_obj.name] = {
                         'amount': amount,
                         'measurement_unit': ing_obj.measurement_unit
-                    })
-                for i in range(len(items)):
-                    if ing_obj.name in items[i].values():
-                        items[i]['amount'] += amount
-                        break
-                    else:
-                        items.append({
-                            'name': ing_obj.name,
-                            'amount': amount,
-                            'measurement_unit': ing_obj.measurement_unit
-                        })
+                    }
+                else:
+                    items[ing_obj.name]['amount'] += amount
+
         return self.create_txt_file(items)
 
 
@@ -312,7 +297,7 @@ class APIFavorite(APIView):
 
 class APIListSubscriptions(ListAPIView):
     """View-класс для получения списка подписок текущего пользователя."""
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagePagination
     serializer_class = SubcriptionSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -372,3 +357,11 @@ class APISubscription(APIView):
             {"detail": "Подписка не найдена."},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+def redirect_to_recipe(request, short_link):
+    try:
+        short_link = ShortLinkRecipe.objects.get(short_link=short_link)
+        return redirect(f'/recipes/{short_link.recipe.id}')
+    except ShortLinkRecipe.DoesNotExist:
+        return redirect('/')

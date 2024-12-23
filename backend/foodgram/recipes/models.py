@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from api.service import get_short_url
+from api.service import get_short_link
 from foodgram.constants import (
     MAX_LENGTH_NAME,
     MAX_LENGTH_NAME_INGREDIENT,
@@ -34,6 +34,11 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        constraints = (
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'], name="unique_ingredient"
+            ),
+        )
 
     def __str__(self):
         return self.name
@@ -217,7 +222,7 @@ class ShortLinkRecipe(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.short_link:
-            self.short_link = get_short_url()
+            self.short_link = get_short_link()
         return super().save(*args, **kwargs)
 
     def __str__(self):

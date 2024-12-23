@@ -22,7 +22,7 @@ class TagAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'author', 'get_favorite_count')
     list_editable = ('author', 'name',)
-    search_fields = ('author', 'name')
+    search_fields = ('author__username', 'name')
     list_filter = ('tags',)
 
     def get_favorite_count(self, obj):
@@ -46,6 +46,7 @@ class IngredientRecipeAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit')
     list_editable = ('name', 'measurement_unit')
+    search_fields = ('name',)
 
 
 @admin.register(ShortLinkRecipe)

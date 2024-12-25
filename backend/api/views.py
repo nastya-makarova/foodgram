@@ -51,7 +51,6 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Ingredient."""
-    # queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('^name',)
@@ -141,6 +140,51 @@ class RecipeViewSet(viewsets.ModelViewSet):
             response.write(f"{list_item}\n")
         return response
 
+    @action(
+        methods=['post', 'delete'],
+        url_path='shopping_cart',
+        detail=True,
+        permission_classes=(permissions.IsAuthenticated,)
+    )
+    def add_and_delete_shopping_cart(self, request, pk):
+        """
+        Метод добавляет рецепт в список покупок пользователя.
+        Или удаляет рецепт из списка покупок пользователя.
+        """
+        recipe = get_object_or_404(Recipe, id=pk)
+        current_user = request.user
+
+        if request.method == 'POST':
+            if ShoppingList.objects.filter(
+                current_user=current_user,
+                recipe=recipe
+            ).exists():
+                return Response('Вы уже добавили рецепт в список покупок.',
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            shopping_list = ShoppingList.objects.create(
+                current_user=current_user,
+                recipe=recipe
+            )
+            serializer = ShoppingListSerializer(shopping_list)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if request.method == 'DELETE':
+            shopping_list = ShoppingList.objects.filter(
+                current_user=current_user,
+                recipe=recipe
+            ).first()
+            if shopping_list:
+                shopping_list.delete()
+                return Response(
+                    {'detail': 'Рецепт успешно удален из списка покупок.'},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+            return Response(
+                {'detail': 'Ошибка удаления из списка покупок.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""
@@ -201,96 +245,51 @@ class FoodgramUserViewSet(UserViewSet):
         return super().get_permissions()
 
 
-# class APIDownloadShoppingList(APIView):
-#     """View-класс для загрузки списка покупок в формате TXT."""
+# class APIShoppingList(APIView):
+#     """
+#     View-класс для добавления и удаления рецептов
+#     из списка покупок пользователя.
+#     """
 #     permission_classes = (permissions.IsAuthenticated,)
 
-#     def create_txt_file(self, items):
-#         """Создание TXT файла."""
-#         response = HttpResponse(content_type='text/plain')
-#         response['Content-Disposition'] = (
-#             'attachment; filename="shopping_list.txt"'
+#     def post(self, request, pk):
+#         """Добавление рецепта в список покупок пользователя."""
+#         recipe = get_object_or_404(Recipe, id=pk)
+#         current_user = request.user
+
+#         if ShoppingList.objects.filter(
+#             current_user=current_user,
+#             recipe=recipe
+#         ).exists():
+#             return Response('Вы уже добавили рецепт в список покупок.',
+#                             status=status.HTTP_400_BAD_REQUEST)
+
+#         shopping_list = ShoppingList.objects.create(
+#             current_user=current_user,
+#             recipe=recipe
 #         )
-#         for name, data in items.items():
-#             list_item = (
-#                 f"{name} - {data['amount']} {data['measurement_unit']}"
+#         serializer = ShoppingListSerializer(shopping_list)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#     def delete(self, request, pk):
+#         """Удаление рецепта в список покупок пользователя."""
+#         current_user = request.user
+#         recipe = get_object_or_404(Recipe, id=pk)
+#         shopping_list = ShoppingList.objects.filter(
+#             current_user=current_user,
+#             recipe=recipe
+#         ).filter()
+#         if shopping_list:
+#             shopping_list.delete()
+#             return Response(
+#                 {'detail': 'Рецепт успешно удален из списка покупок.'},
+#                 status=status.HTTP_204_NO_CONTENT
 #             )
-#             response.write(f"{list_item}\n")
-#         return response
 
-#     def get(self, request):
-#         """
-#         Метод получает список покупок для текущего пользователя
-#         и создает текстовый файл.
-#         """
-#         recipes_for_shopping = ShoppingList.objects.filter(
-#             current_user=request.user
+#         return Response(
+#             {'detail': 'Ошибка удаления из списка покупок.'},
+#             status=status.HTTP_400_BAD_REQUEST
 #         )
-#         items = {}
-#         for recipe in recipes_for_shopping:
-#             ingredients = IngredientRecipe.objects.filter(
-#                 recipe=recipe.recipe)
-#             for ingredient in ingredients:
-#                 ing_obj = Ingredient.objects.filter(
-#                     id=ingredient.ingredient.id
-#                 ).first()
-#                 amount = ingredient.amount
-#                 if ing_obj.name not in items:
-#                     items[ing_obj.name] = {
-#                         'amount': amount,
-#                         'measurement_unit': ing_obj.measurement_unit
-#                     }
-#                 else:
-#                     items[ing_obj.name]['amount'] += amount
-
-#         return self.create_txt_file(items)
-
-
-class APIShoppingList(APIView):
-    """
-    View-класс для добавления и удаления рецептов
-    из списка покупок пользователя.
-    """
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def post(self, request, pk):
-        """Добавление рецепта в список покупок пользователя."""
-        recipe = get_object_or_404(Recipe, id=pk)
-        current_user = request.user
-
-        if ShoppingList.objects.filter(
-            current_user=current_user,
-            recipe=recipe
-        ).exists():
-            return Response('Вы уже добавили рецепт в список покупок.',
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        shopping_list = ShoppingList.objects.create(
-            current_user=current_user,
-            recipe=recipe
-        )
-        serializer = ShoppingListSerializer(shopping_list)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, pk):
-        """Удаление рецепта в список покупок пользователя."""
-        current_user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
-        shopping_list = ShoppingList.objects.filter(
-            current_user=current_user,
-            recipe=recipe
-        ).filter()
-        if shopping_list:
-            shopping_list.delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален из списка покупок.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-
-        return Response(
-            {'detail': 'Ошибка удаления из списка покупок.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
 
 
 class APIFavorite(APIView):

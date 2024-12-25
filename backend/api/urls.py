@@ -7,8 +7,6 @@ from .views import (
     RecipeViewSet,
     TagViewSet,
     FoodgramUserViewSet,
-    # APIDownloadShoppingList,
-    APIShoppingList,
     APIListSubscriptions,
     APISubscription,
 )
@@ -24,11 +22,6 @@ router_v1.register('recipes', RecipeViewSet)
 router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
 
 urlpatterns = [
-    # path(
-    # 'recipes/download_shopping_cart/',
-    # APIDownloadShoppingList.as_view()
-    # ),
-    path('recipes/<int:pk>/shopping_cart/', APIShoppingList.as_view()),
     path('recipes/<int:pk>/favorite/', APIFavorite.as_view()),
     path('users/subscriptions/', APIListSubscriptions.as_view()),
     path('users/<int:pk>/subscribe/', APISubscription.as_view()),

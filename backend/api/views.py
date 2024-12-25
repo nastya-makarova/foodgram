@@ -51,7 +51,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet для работы с моделью Ingredient."""
-    queryset = Ingredient.objects.all()
+    # queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('^name',)
@@ -99,6 +99,47 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response({
             'short-link': short_link_url
         })
+    
+    @action(
+        methods=['get'],
+        url_path='download_shopping_cart',
+        detail=False,
+        permission_classes=(permissions.IsAuthenticated,)
+    )
+    def get_shopping_cart(self, request):
+        """Метод для загрузки списка покупок в формате TXT.
+        Метод получает список покупок для текущего пользователя
+        и создает текстовый файл.
+        """
+        recipes_for_shopping = ShoppingList.objects.filter(
+            current_user=request.user
+        )
+        items = {}
+        for recipe in recipes_for_shopping:
+            ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
+            for ingredient in ingredients:
+                ing_obj = Ingredient.objects.filter(
+                    id=ingredient.ingredient.id
+                ).first()
+                amount = ingredient.amount
+                if ing_obj.name not in items:
+                    items[ing_obj.name] = {
+                        'amount': amount,
+                        'measurement_unit': ing_obj.measurement_unit
+                    }
+                else:
+                    items[ing_obj.name]['amount'] += amount
+
+        response = HttpResponse(content_type='text/plain')
+        response['Content-Disposition'] = (
+            'attachment; filename="shopping_list.txt"'
+        )
+        for name, data in items.items():
+            list_item = (
+                f"{name} - {data['amount']} {data['measurement_unit']}"
+            )
+            response.write(f"{list_item}\n")
+        return response
 
 
 class FoodgramUserViewSet(UserViewSet):
@@ -160,48 +201,48 @@ class FoodgramUserViewSet(UserViewSet):
         return super().get_permissions()
 
 
-class APIDownloadShoppingList(APIView):
-    """View-класс для загрузки списка покупок в формате TXT."""
-    permission_classes = (permissions.IsAuthenticated,)
+# class APIDownloadShoppingList(APIView):
+#     """View-класс для загрузки списка покупок в формате TXT."""
+#     permission_classes = (permissions.IsAuthenticated,)
 
-    def create_txt_file(self, items):
-        """Создание TXT файла."""
-        response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = (
-            'attachment; filename="shopping_list.txt"'
-        )
-        for name, data in items.items():
-            list_item = (
-                f"{name} - {data['amount']} {data['measurement_unit']}"
-            )
-            response.write(f"{list_item}\n")
-        return response
+#     def create_txt_file(self, items):
+#         """Создание TXT файла."""
+#         response = HttpResponse(content_type='text/plain')
+#         response['Content-Disposition'] = (
+#             'attachment; filename="shopping_list.txt"'
+#         )
+#         for name, data in items.items():
+#             list_item = (
+#                 f"{name} - {data['amount']} {data['measurement_unit']}"
+#             )
+#             response.write(f"{list_item}\n")
+#         return response
 
-    def get(self, request):
-        """
-        Метод получает список покупок для текущего пользователя
-        и создает текстовый файл.
-        """
-        recipes_for_shopping = ShoppingList.objects.filter(
-            current_user=request.user
-        )
-        items = {}
-        for recipe in recipes_for_shopping:
-            ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
-            for ingredient in ingredients:
-                ing_obj = Ingredient.objects.filter(
-                    id=ingredient.ingredient.id
-                ).first()
-                amount = ingredient.amount
-                if ing_obj.name not in items:
-                    items[ing_obj.name] = {
-                        'amount': amount,
-                        'measurement_unit': ing_obj.measurement_unit
-                    }
-                else:
-                    items[ing_obj.name]['amount'] += amount
+#     def get(self, request):
+#         """
+#         Метод получает список покупок для текущего пользователя
+#         и создает текстовый файл.
+#         """
+#         recipes_for_shopping = ShoppingList.objects.filter(
+#             current_user=request.user
+#         )
+#         items = {}
+#         for recipe in recipes_for_shopping:
+#             ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
+#             for ingredient in ingredients:
+#                 ing_obj = Ingredient.objects.filter(
+#                     id=ingredient.ingredient.id
+#                 ).first()
+#                 amount = ingredient.amount
+#                 if ing_obj.name not in items:
+#                     items[ing_obj.name] = {
+#                         'amount': amount,
+#                         'measurement_unit': ing_obj.measurement_unit
+#                     }
+#                 else:
+#                     items[ing_obj.name]['amount'] += amount
 
-        return self.create_txt_file(items)
+#         return self.create_txt_file(items)
 
 
 class APIShoppingList(APIView):

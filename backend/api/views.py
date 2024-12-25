@@ -99,7 +99,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response({
             'short-link': short_link_url
         })
-    
+
     @action(
         methods=['get'],
         url_path='download_shopping_cart',
@@ -228,7 +228,8 @@ class FoodgramUserViewSet(UserViewSet):
 #         )
 #         items = {}
 #         for recipe in recipes_for_shopping:
-#             ingredients = IngredientRecipe.objects.filter(recipe=recipe.recipe)
+#             ingredients = IngredientRecipe.objects.filter(
+#                 recipe=recipe.recipe)
 #             for ingredient in ingredients:
 #                 ing_obj = Ingredient.objects.filter(
 #                     id=ingredient.ingredient.id

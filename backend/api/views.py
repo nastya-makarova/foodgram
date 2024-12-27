@@ -19,9 +19,10 @@ from .serializers import (
     AvatarUpdateSerializer,
     FavoritesSerializer,
     IngredientSerializer,
-    RecipeSerializer, RecipeCreateSerializer,
+    RecipeSerializer,
+    RecipeCreateSerializer,
+    RecipeResponseSerializer,
     ShortLinkRecipeSeriealizer,
-    ShoppingListSerializer,
     SubcriptionSerializer,
     TagSerializer,
     UserSerializer,
@@ -155,19 +156,31 @@ class RecipeViewSet(viewsets.ModelViewSet):
         current_user = request.user
 
         if request.method == 'POST':
-            if ShoppingList.objects.filter(
-                current_user=current_user,
-                recipe=recipe
-            ).exists():
-                return Response('Вы уже добавили рецепт в список покупок.',
-                                status=status.HTTP_400_BAD_REQUEST)
-
-            shopping_list = ShoppingList.objects.create(
-                current_user=current_user,
-                recipe=recipe
+            data = {'id': recipe.id,
+                    'name': recipe.name,
+                    'image': recipe.image,
+                    'cooking_time': recipe.cooking_time}
+            serializer = RecipeResponseSerializer(
+                data=data,
+                context={'request': request}
             )
-            serializer = ShoppingListSerializer(shopping_list)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            print("Is serializer valid?", serializer.is_valid())
+            print("Validation failed with errors:", serializer.errors)
+
+            if serializer.is_valid():
+                shopping_list = ShoppingList.objects.create(
+                    current_user=current_user,
+                    recipe=recipe
+                )
+                serializer = RecipeResponseSerializer(shopping_list.recipe)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'DELETE':
             shopping_list = ShoppingList.objects.filter(
@@ -243,53 +256,6 @@ class FoodgramUserViewSet(UserViewSet):
             return (UnauthorizedOrAdmin(),)
 
         return super().get_permissions()
-
-
-# class APIShoppingList(APIView):
-#     """
-#     View-класс для добавления и удаления рецептов
-#     из списка покупок пользователя.
-#     """
-#     permission_classes = (permissions.IsAuthenticated,)
-
-#     def post(self, request, pk):
-#         """Добавление рецепта в список покупок пользователя."""
-#         recipe = get_object_or_404(Recipe, id=pk)
-#         current_user = request.user
-
-#         if ShoppingList.objects.filter(
-#             current_user=current_user,
-#             recipe=recipe
-#         ).exists():
-#             return Response('Вы уже добавили рецепт в список покупок.',
-#                             status=status.HTTP_400_BAD_REQUEST)
-
-#         shopping_list = ShoppingList.objects.create(
-#             current_user=current_user,
-#             recipe=recipe
-#         )
-#         serializer = ShoppingListSerializer(shopping_list)
-#         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-#     def delete(self, request, pk):
-#         """Удаление рецепта в список покупок пользователя."""
-#         current_user = request.user
-#         recipe = get_object_or_404(Recipe, id=pk)
-#         shopping_list = ShoppingList.objects.filter(
-#             current_user=current_user,
-#             recipe=recipe
-#         ).filter()
-#         if shopping_list:
-#             shopping_list.delete()
-#             return Response(
-#                 {'detail': 'Рецепт успешно удален из списка покупок.'},
-#                 status=status.HTTP_204_NO_CONTENT
-#             )
-
-#         return Response(
-#             {'detail': 'Ошибка удаления из списка покупок.'},
-#             status=status.HTTP_400_BAD_REQUEST
-#         )
 
 
 class APIFavorite(APIView):

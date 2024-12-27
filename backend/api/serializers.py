@@ -2,6 +2,7 @@ import base64
 import re
 
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from recipes.models import (
@@ -401,6 +402,19 @@ class RecipeResponseSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+
+    def validate(self, data):
+        current_user = self.context['request'].user
+        recipe_id = self.initial_data['id']
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        if ShoppingList.objects.filter(
+                current_user=current_user.id,
+                recipe=recipe
+        ).exists():
+            raise serializers.ValidationError(
+                'Вы уже добавили рецепт в список покупок.',
+            )
+        return data
 
 
 class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):

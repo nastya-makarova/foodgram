@@ -97,7 +97,6 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        through='TagRecipe',
         verbose_name='Тег',
         help_text='Список id тегов',
         related_name='recipes'
@@ -150,18 +149,6 @@ class IngredientRecipe(models.Model):
     class Meta:
         verbose_name = 'Ингредиент и Рецепт'
         verbose_name_plural = 'Ингредиенты и Рецепты'
-
-
-class TagRecipe(models.Model):
-    """Модель для связи между тегами и рецептами.
-    Связь между тегами и рецептами многие-к-многим.
-    """
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = 'Тег и Рецепт'
-        verbose_name_plural = 'Теги и Рецепты'
 
 
 class Favorite(models.Model):

@@ -13,7 +13,6 @@ from recipes.models import (
     ShoppingList,
     ShortLinkRecipe,
     Tag,
-    TagRecipe,
     User,
 )
 from users.models import Subscription
@@ -331,9 +330,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             image=image,
             **validated_data
         )
-        for tag in tags_data:
-            tag = Tag.objects.get(id=tag.id)
-            TagRecipe.objects.create(recipe=recipe, tag=tag)
+        recipe.tags.set(tags_data)
+
         for ingredient in ingredients_data:
             amount = ingredient['amount']
             ingredient = Ingredient.objects.get(id=ingredient['id'])
@@ -357,11 +355,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if 'tags' not in validated_data:
             instance.save()
         else:
-            tags_data = validated_data.pop('tags')
-            TagRecipe.objects.filter(recipe=instance).all().delete()
-            for tag in tags_data:
-                tag = Tag.objects.get(id=tag.id)
-                TagRecipe.objects.create(recipe=instance, tag=tag)
+            instance.tags.clear()
+            tags_data = self.initial_data.get('tags')
+            instance.tags.set(tags_data)
 
         if 'ingredients' not in validated_data:
             instance.save()

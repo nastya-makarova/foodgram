@@ -7,7 +7,6 @@ from .models import (
     IngredientRecipe,
     Recipe,
     ShortLinkRecipe,
-    TagRecipe,
     Tag,
     ShoppingList
 )
@@ -50,12 +49,6 @@ class RecipeAdmin(admin.ModelAdmin):
         return "-"
 
     get_author_link.short_description = 'Автор'
-
-
-@admin.register(TagRecipe)
-class TagRecipeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tag', 'recipe')
-    list_display_links = ('recipe', 'tag')
 
 
 @admin.register(Ingredient)

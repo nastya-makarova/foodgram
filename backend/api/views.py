@@ -186,6 +186,51 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(
+        methods=['post', 'delete'],
+        url_path='favorite',
+        detail=True,
+        permission_classes=(permissions.IsAuthenticated,)
+    )
+    def add_and_delete_favorite(self, request, pk):
+        """
+        Метод добавляет рецепт в избранное пользователя.
+        Или удаляет рецепт из избранного пользователя.
+        """
+        recipe = get_object_or_404(Recipe, id=pk)
+        current_user = request.user
+
+        data = {'id': recipe.id,
+                'name': recipe.name,
+                'image': recipe.image,
+                'cooking_time': recipe.cooking_time}
+        serializer = RecipeResponseSerializer(
+            data=data,
+            context={'request': request}
+        )
+
+        if serializer.is_valid():
+            if request.method == 'POST':
+                favorite_recipe = Favorite.objects.create(
+                    current_user=current_user,
+                    recipe=recipe
+                )
+                serializer = RecipeResponseSerializer(favorite_recipe.recipe)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED)
+
+            if request.method == 'DELETE':
+                favorite_recipe = Favorite.objects.filter(
+                    current_user=current_user,
+                    recipe=recipe).first()
+                favorite_recipe.delete()
+                return Response(
+                    {'detail': 'Рецепт успешно удален из избранного.'},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class FoodgramUserViewSet(UserViewSet):
     """ViewSet для работы с моделью User."""

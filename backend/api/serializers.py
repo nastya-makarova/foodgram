@@ -404,21 +404,35 @@ class RecipeResponseSerializer(serializers.ModelSerializer):
         return None
 
     def validate(self, data):
+        """
+        Метод проверяет данные для рецепта при добавлении и
+        удаление из списока покупок или в избранного.
+        """
+        print(self.context['request'].path)
         current_user = self.context['request'].user
         recipe_id = self.initial_data['id']
         recipe = get_object_or_404(Recipe, id=recipe_id)
-        shopping_item = ShoppingList.objects.filter(
-            current_user=current_user.id,
-            recipe=recipe
-        )
-        if self.context['request'].method == 'POST' and shopping_item:
-            raise serializers.ValidationError(
-                'Вы уже добавили рецепт в список покупок.',
+        path = self.context['request'].path
+
+        if 'shopping_cart' in path:
+            item = ShoppingList.objects.filter(
+                current_user=current_user.id,
+                recipe=recipe
+            )
+        else:
+            item = Favorite.objects.filter(
+                current_user=current_user.id,
+                recipe=recipe
             )
 
-        if self.context['request'].method == 'DELETE' and not shopping_item:
+        if self.context['request'].method == 'POST' and item:
             raise serializers.ValidationError(
-                'Ошибка удаления из списка покупок.',
+                'Вы уже добавили этот рецепт.',
+            )
+
+        if self.context['request'].method == 'DELETE' and not item:
+            raise serializers.ValidationError(
+                'Ошибка удаления рецепта.',
             )
         return data
 
@@ -429,24 +443,6 @@ class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
     class Meta:
         model = ShortLinkRecipe
         fields = ('short_link',)
-
-
-class FavoritesSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели Favorite."""
-    recipe = RecipeResponseSerializer()
-
-    class Meta:
-        model = Favorite
-        fields = ('recipe',)
-
-    def to_representation(self, instance):
-        """
-        Метод переопределяет стандартное поведение сериализатора
-        и возвращает только данные
-        о рецепте, ассоциированном с объектом Favorite.
-        """
-        representation = super().to_representation(instance)
-        return representation['recipe']
 
 
 class SubcriptionSerializer(serializers.ModelSerializer):

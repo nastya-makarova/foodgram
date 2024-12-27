@@ -155,19 +155,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         current_user = request.user
 
-        if request.method == 'POST':
-            data = {'id': recipe.id,
-                    'name': recipe.name,
-                    'image': recipe.image,
-                    'cooking_time': recipe.cooking_time}
-            serializer = RecipeResponseSerializer(
-                data=data,
-                context={'request': request}
-            )
-            print("Is serializer valid?", serializer.is_valid())
-            print("Validation failed with errors:", serializer.errors)
+        data = {'id': recipe.id,
+                'name': recipe.name,
+                'image': recipe.image,
+                'cooking_time': recipe.cooking_time}
+        serializer = RecipeResponseSerializer(
+            data=data,
+            context={'request': request})
 
-            if serializer.is_valid():
+        if serializer.is_valid():
+            if request.method == 'POST':
                 shopping_list = ShoppingList.objects.create(
                     current_user=current_user,
                     recipe=recipe
@@ -177,26 +174,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     serializer.data,
                     status=status.HTTP_201_CREATED
                 )
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
-        if request.method == 'DELETE':
-            shopping_list = ShoppingList.objects.filter(
-                current_user=current_user,
-                recipe=recipe
-            ).first()
-            if shopping_list:
+            if request.method == 'DELETE':
+                shopping_list = ShoppingList.objects.filter(
+                    current_user=current_user,
+                    recipe=recipe).first()
                 shopping_list.delete()
                 return Response(
                     {'detail': 'Рецепт успешно удален из списка покупок.'},
                     status=status.HTTP_204_NO_CONTENT
                 )
-            return Response(
-                {'detail': 'Ошибка удаления из списка покупок.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FoodgramUserViewSet(UserViewSet):

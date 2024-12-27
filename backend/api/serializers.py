@@ -407,12 +407,18 @@ class RecipeResponseSerializer(serializers.ModelSerializer):
         current_user = self.context['request'].user
         recipe_id = self.initial_data['id']
         recipe = get_object_or_404(Recipe, id=recipe_id)
-        if ShoppingList.objects.filter(
-                current_user=current_user.id,
-                recipe=recipe
-        ).exists():
+        shopping_item = ShoppingList.objects.filter(
+            current_user=current_user.id,
+            recipe=recipe
+        )
+        if self.context['request'].method == 'POST' and shopping_item:
             raise serializers.ValidationError(
                 'Вы уже добавили рецепт в список покупок.',
+            )
+
+        if self.context['request'].method == 'DELETE' and not shopping_item:
+            raise serializers.ValidationError(
+                'Ошибка удаления из списка покупок.',
             )
         return data
 
@@ -423,23 +429,6 @@ class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
     class Meta:
         model = ShortLinkRecipe
         fields = ('short_link',)
-
-
-class ShoppingListSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели ShoppingList."""
-    recipe = RecipeResponseSerializer()
-
-    class Meta:
-        model = ShoppingList
-        fields = ('recipe',)
-
-    def to_representation(self, instance):
-        """
-        Метод изменяет формат вывода данных для рецепта,
-        связанного со списком покупок.
-        """
-        representation = super().to_representation(instance)
-        return representation['recipe']
 
 
 class FavoritesSerializer(serializers.ModelSerializer):

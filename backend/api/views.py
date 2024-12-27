@@ -17,7 +17,6 @@ from .pagination import LimitPagePagination
 from .permissions import UnauthorizedOrAdmin, RecipePermisssion
 from .serializers import (
     AvatarUpdateSerializer,
-    FavoritesSerializer,
     IngredientSerializer,
     RecipeSerializer,
     RecipeCreateSerializer,

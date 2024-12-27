@@ -290,50 +290,6 @@ class FoodgramUserViewSet(UserViewSet):
         return super().get_permissions()
 
 
-class APIFavorite(APIView):
-    """
-    View-класс для добавления и удаления рецептов
-    из избранного пользователя.
-    """
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def post(self, request, pk):
-        """Добавление рецепта в избранное пользователя."""
-        recipe = get_object_or_404(Recipe, id=pk)
-
-        if Favorite.objects.filter(
-            current_user=request.user,
-            recipe=recipe
-        ).exists():
-            return Response('Вы уже добавили рецепт в избранное.',
-                            status=status.HTTP_400_BAD_REQUEST)
-        favorite_recipe = Favorite.objects.create(
-            current_user=request.user,
-            recipe=recipe
-        )
-        serializer = FavoritesSerializer(favorite_recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, pk):
-        """Удаление рецепта в избранное пользователя."""
-        recipe = get_object_or_404(Recipe, id=pk)
-        favorite_recipe = Favorite.objects.filter(
-            current_user=request.user,
-            recipe=recipe
-        ).first()
-        if favorite_recipe:
-            favorite_recipe.delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален из избранного.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        else:
-            return Response(
-                {'detail': 'Ошибка удаления из избранного.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-
 class APIListSubscriptions(ListAPIView):
     """View-класс для получения списка подписок текущего пользователя."""
     pagination_class = LimitPagePagination

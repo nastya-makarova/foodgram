@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from foodgram.constants import MAX_LENGTH_EMAIL, MAX_LENGTH_FOR_USER
@@ -68,3 +69,17 @@ class Subscription(models.Model):
                 fields=['user', 'current_user'], name="unique_subscription"
             ),
         )
+
+    def clean(self):
+        if self.current_user == self.user:
+            raise ValidationError("Вы не можете подписаться на самого себя.")
+
+        if Subscription.objects.filter(
+            current_user=self.current_user,
+            user=self.user
+        ).exists():
+            raise ValidationError("Вы уже подписаны на этого пользователя.")
+
+    def save(self, **kwargs):
+        self.clean()
+        super().save(**kwargs)

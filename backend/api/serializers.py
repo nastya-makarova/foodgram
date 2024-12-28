@@ -1,6 +1,7 @@
 import base64
 import re
 
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -13,9 +14,10 @@ from recipes.models import (
     ShoppingList,
     ShortLinkRecipe,
     Tag,
-    User,
 )
 from users.models import Subscription
+
+User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
@@ -511,3 +513,29 @@ class SubcriptionSerializer(serializers.ModelSerializer):
         на котрого подписан текущий пользователь.
         """
         return Recipe.objects.filter(author=obj.user).count()
+
+    def validate(self, data):
+        current_user = self.context['request'].user
+        user_id = self.initial_data['id']
+        user = get_object_or_404(User, id=user_id)
+
+        subscription = Subscription.objects.filter(
+            current_user=current_user,
+            user=user
+        ).first()
+
+        if self.context['request'].method == 'POST' and subscription:
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого пользователя',
+            )
+
+        if self.context['request'].method == 'POST' and current_user == user:
+            raise serializers.ValidationError(
+                'Вы не можете подписываться на самого себя',
+            )
+
+        if self.context['request'].method == 'DELETE' and not subscription:
+            raise serializers.ValidationError(
+                'Подписка не найдена.',
+            )
+        return data

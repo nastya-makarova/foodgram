@@ -5,9 +5,7 @@ from .views import (
     IngredientViewSet,
     RecipeViewSet,
     TagViewSet,
-    FoodgramUserViewSet,
-    APIListSubscriptions,
-    APISubscription,
+    FoodgramUserViewSet
 )
 
 users_v1 = DefaultRouter()
@@ -21,8 +19,6 @@ router_v1.register('recipes', RecipeViewSet)
 router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
 
 urlpatterns = [
-    path('users/subscriptions/', APIListSubscriptions.as_view()),
-    path('users/<int:pk>/subscribe/', APISubscription.as_view()),
     path('', include(router_v1.urls)),
     path('', include(users_v1.urls)),
     path('auth/', include('djoser.urls.authtoken')),

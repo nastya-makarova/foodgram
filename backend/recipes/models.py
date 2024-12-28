@@ -151,20 +151,27 @@ class IngredientRecipe(models.Model):
         verbose_name_plural = 'Ингредиенты и Рецепты'
 
 
-class Favorite(models.Model):
-    """Модель для избранных рецептов."""
+class BaseList(models.Model):
+    """Абстрактная модель для избранного и списка покупок."""
     current_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Текущий пользователь',
-        related_name='favorites'
+        related_name='%(class)s'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='favorites'
+        related_name='%(class)s'
     )
+
+    class Meta:
+        abstract = True
+
+
+class Favorite(BaseList):
+    """Модель для избранных рецептов."""
 
     class Meta:
         unique_together = ('current_user', 'recipe')
@@ -172,22 +179,11 @@ class Favorite(models.Model):
         verbose_name_plural = 'Избранные'
 
 
-class ShoppingList(models.Model):
+class ShoppingList(BaseList):
     """Модель для списка покупок."""
-    current_user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Текущий пользователь',
-        related_name='shopping_lists'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-        related_name='shopping_lists'
-    )
 
     class Meta:
+        unique_together = ('current_user', 'recipe')
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
 

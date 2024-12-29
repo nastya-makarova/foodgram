@@ -97,7 +97,6 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        through='TagRecipe',
         verbose_name='Тег',
         help_text='Список id тегов',
         related_name='recipes'
@@ -152,32 +151,27 @@ class IngredientRecipe(models.Model):
         verbose_name_plural = 'Ингредиенты и Рецепты'
 
 
-class TagRecipe(models.Model):
-    """Модель для связи между тегами и рецептами.
-    Связь между тегами и рецептами многие-к-многим.
-    """
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = 'Тег и Рецепт'
-        verbose_name_plural = 'Теги и Рецепты'
-
-
-class Favorite(models.Model):
-    """Модель для избранных рецептов."""
+class BaseList(models.Model):
+    """Абстрактная модель для избранного и списка покупок."""
     current_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Текущий пользователь',
-        related_name='favorites'
+        related_name='%(class)ss'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='favorites'
+        related_name='%(class)ss'
     )
+
+    class Meta:
+        abstract = True
+
+
+class Favorite(BaseList):
+    """Модель для избранных рецептов."""
 
     class Meta:
         unique_together = ('current_user', 'recipe')
@@ -185,22 +179,11 @@ class Favorite(models.Model):
         verbose_name_plural = 'Избранные'
 
 
-class ShoppingList(models.Model):
+class ShoppingList(BaseList):
     """Модель для списка покупок."""
-    current_user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Текущий пользователь',
-        related_name='shopping_lists'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-        related_name='shopping_lists'
-    )
 
     class Meta:
+        unique_together = ('current_user', 'recipe')
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
 

@@ -57,10 +57,10 @@ class RecipeFilter(django_filters.FilterSet):
         if current_user.is_authenticated and value is not None:
             if value:
                 return queryset.filter(
-                    shopping_lists__current_user=current_user
+                    shoppinglists__current_user=current_user
                 )
             else:
                 return queryset.exclude(
-                    shopping_lists__current_user=current_user.id
+                    shoppinglists__current_user=current_user.id
                 )
         return queryset

@@ -157,13 +157,13 @@ class BaseList(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Текущий пользователь',
-        related_name='%(class)s'
+        related_name='%(class)ss'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='%(class)s'
+        related_name='%(class)ss'
     )
 
     class Meta:

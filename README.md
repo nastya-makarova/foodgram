@@ -53,4 +53,12 @@ pyhton manage.py createsuperuser
 pyhton manage.py load_csv_data
 ```
 
-### Проект доступен по [ссылке](https://yafoodgram.zapto.org) 
+### Проект доступен по [ссылке](https://yafoodgram.zapto.org)
+
+## Технологии, которые применены в этом проекте:
+* Python
+* Django
+* Django REST Framework
+* Djoser
+
+## Автор проекта: [Анастасия Макарова](https://github.com/nastya-makarova)

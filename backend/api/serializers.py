@@ -1,7 +1,9 @@
 import base64
 import re
 
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from recipes.models import (
@@ -12,10 +14,10 @@ from recipes.models import (
     ShoppingList,
     ShortLinkRecipe,
     Tag,
-    TagRecipe,
-    User,
 )
 from users.models import Subscription
+
+User = get_user_model()
 
 
 class Base64ImageField(serializers.ImageField):
@@ -330,9 +332,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             image=image,
             **validated_data
         )
-        for tag in tags_data:
-            tag = Tag.objects.get(id=tag.id)
-            TagRecipe.objects.create(recipe=recipe, tag=tag)
+        recipe.tags.set(tags_data)
+
         for ingredient in ingredients_data:
             amount = ingredient['amount']
             ingredient = Ingredient.objects.get(id=ingredient['id'])
@@ -356,11 +357,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if 'tags' not in validated_data:
             instance.save()
         else:
-            tags_data = validated_data.pop('tags')
-            TagRecipe.objects.filter(recipe=instance).all().delete()
-            for tag in tags_data:
-                tag = Tag.objects.get(id=tag.id)
-                TagRecipe.objects.create(recipe=instance, tag=tag)
+            instance.tags.clear()
+            tags_data = self.initial_data.get('tags')
+            instance.tags.set(tags_data)
 
         if 'ingredients' not in validated_data:
             instance.save()
@@ -402,6 +401,39 @@ class RecipeResponseSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
 
+    def validate(self, data):
+        """
+        Метод проверяет данные для рецепта при добавлении и
+        удаление из списока покупок или в избранного.
+        """
+        print(self.context['request'].path)
+        current_user = self.context['request'].user
+        recipe_id = self.initial_data['id']
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        path = self.context['request'].path
+
+        if 'shopping_cart' in path:
+            item = ShoppingList.objects.filter(
+                current_user=current_user.id,
+                recipe=recipe
+            )
+        else:
+            item = Favorite.objects.filter(
+                current_user=current_user.id,
+                recipe=recipe
+            )
+
+        if self.context['request'].method == 'POST' and item:
+            raise serializers.ValidationError(
+                'Вы уже добавили этот рецепт.',
+            )
+
+        if self.context['request'].method == 'DELETE' and not item:
+            raise serializers.ValidationError(
+                'Ошибка удаления рецепта.',
+            )
+        return data
+
 
 class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
     """Сериализатор для модели ShortLink."""
@@ -409,41 +441,6 @@ class ShortLinkRecipeSeriealizer(serializers.ModelSerializer):
     class Meta:
         model = ShortLinkRecipe
         fields = ('short_link',)
-
-
-class ShoppingListSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели ShoppingList."""
-    recipe = RecipeResponseSerializer()
-
-    class Meta:
-        model = ShoppingList
-        fields = ('recipe',)
-
-    def to_representation(self, instance):
-        """
-        Метод изменяет формат вывода данных для рецепта,
-        связанного со списком покупок.
-        """
-        representation = super().to_representation(instance)
-        return representation['recipe']
-
-
-class FavoritesSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели Favorite."""
-    recipe = RecipeResponseSerializer()
-
-    class Meta:
-        model = Favorite
-        fields = ('recipe',)
-
-    def to_representation(self, instance):
-        """
-        Метод переопределяет стандартное поведение сериализатора
-        и возвращает только данные
-        о рецепте, ассоциированном с объектом Favorite.
-        """
-        representation = super().to_representation(instance)
-        return representation['recipe']
 
 
 class SubcriptionSerializer(serializers.ModelSerializer):
@@ -516,3 +513,29 @@ class SubcriptionSerializer(serializers.ModelSerializer):
         на котрого подписан текущий пользователь.
         """
         return Recipe.objects.filter(author=obj.user).count()
+
+    def validate(self, data):
+        current_user = self.context['request'].user
+        user_id = self.initial_data['id']
+        user = get_object_or_404(User, id=user_id)
+
+        subscription = Subscription.objects.filter(
+            current_user=current_user,
+            user=user
+        ).first()
+
+        if self.context['request'].method == 'POST' and subscription:
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого пользователя',
+            )
+
+        if self.context['request'].method == 'POST' and current_user == user:
+            raise serializers.ValidationError(
+                'Вы не можете подписываться на самого себя',
+            )
+
+        if self.context['request'].method == 'DELETE' and not subscription:
+            raise serializers.ValidationError(
+                'Подписка не найдена.',
+            )
+        return data

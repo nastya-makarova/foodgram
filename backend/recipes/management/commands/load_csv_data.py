@@ -20,7 +20,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         """Метод обрабатывает команду импорта csv данных в БД."""
 
-        root_directory = os.path.dirname(os.path.dirname(settings.BASE_DIR))
+        root_directory = os.path.dirname(settings.BASE_DIR)
 
         filepath = os.path.join(root_directory, 'data/ingredients.csv')
 
